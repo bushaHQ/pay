@@ -65,7 +65,7 @@ class BushaPayConfig {
       metaName: metaName ?? this.metaName,
       metaEmail: metaEmail ?? this.metaEmail,
       metaPhone: metaPhone ?? this.metaPhone,
-      source: source ?? this.source ?? 'payment-link',
+      source: source ?? this.source,
       sourceId: sourceId ?? this.sourceId,
     );
   }
@@ -90,7 +90,7 @@ class BushaPayConfig {
         if (metaEmail != null) 'email': metaEmail,
         if (metaPhone != null) 'phone_number': metaPhone,
       },
-      'source': source ?? 'payment-link',
+      'source': source,
       if (sourceId != null) 'source_id': sourceId,
     };
   }
@@ -114,7 +114,7 @@ class BushaPayConfig {
       if (metaName != null) 'meta[name]': metaName!,
       if (metaEmail != null) 'meta[email]': metaEmail!,
       if (metaPhone != null) 'meta[phone_number]': metaPhone!,
-      'source': source ?? 'payment-link',
+      if (source != null) 'source': source!,
       if (sourceId != null) 'source_id': sourceId!,
     };
   }

@@ -145,7 +145,8 @@ class _BushaPaySheetState extends State<BushaPaySheet>
   /// equivalent listener into the checkout page's JS context so we can
   /// still receive INITIALIZED / CANCELLED / COMPLETED statuses.
   void _injectMessageListener(InAppWebViewController controller) {
-    controller.evaluateJavascript(source: r'''
+    controller.evaluateJavascript(
+      source: r'''
       (function() {
         if (window.__bushaPayListenerAdded) return;
         window.__bushaPayListenerAdded = true;
@@ -166,7 +167,8 @@ class _BushaPaySheetState extends State<BushaPaySheet>
           }
         });
       })();
-    ''');
+    ''',
+    );
   }
 
   /// Submit the checkout form via JS after the bridge HTML loads.

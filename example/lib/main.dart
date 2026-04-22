@@ -151,13 +151,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () => BushaPay.checkout(
                 context: context,
                 config: const BushaPayConfig(
-                  quoteAmount: '20000',
+                  quoteAmount: '200000',
                   quoteCurrency: 'NGN',
                   targetCurrency: 'USDT',
-                  sourceCurrency: 'USDT',
+                  sourceCurrency: 'BTC',
                   metaName: 'Test Customer',
                   metaEmail: 'test@example.com',
-                  sourceId: '9GNJ6oFxOMOF',
                 ),
                 onComplete: _handleResult,
               ),
