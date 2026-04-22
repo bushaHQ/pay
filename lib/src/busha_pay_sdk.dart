@@ -7,10 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
-import 'busha_pay_api.dart';
 import 'busha_pay_app.dart';
 import 'payment_method_chooser.dart';
-import 'payment_request.dart';
 
 /// Busha Pay environment.
 enum BushaEnvironment {
@@ -105,11 +103,10 @@ class BushaPay {
   /// Launch the Busha Pay checkout.
   ///
   /// Flow:
-  /// 1. Creates a payment request via the Busha API.
-  /// 2. Shows a chooser — "Pay with Busha app" or "Pay with Stablecoins".
-  /// 3. Busha app → deep-links into the installed app (or falls back to the
+  /// 1. Shows a chooser — "Pay with Busha app" or "Pay with Stablecoins".
+  /// 2. Busha app → deep-links into the installed app (or falls back to the
   ///    web checkout if the app isn't installed).
-  /// 4. Stablecoins → opens the web checkout.
+  /// 3. Stablecoins → opens the web checkout.
   ///
   /// [onComplete] is called exactly once with the payment result.
   static void checkout({
@@ -140,29 +137,7 @@ class BushaPay {
     required BuildContext context,
     required BushaPayConfig config,
   }) async {
-    // 1. Create the payment request server-side.
-    final PaymentRequest paymentRequest;
-    try {
-      paymentRequest = await BushaPayApi.createPaymentRequest(
-        config: config,
-        publicKey: publicKey,
-        isDev: isDevMode,
-      );
-    } on BushaPayApiException catch (e) {
-      return BushaPayError(
-        message: e.displayMessage,
-        code: 'CREATE_PAYMENT_REQUEST_FAILED',
-      );
-    } catch (e) {
-      return BushaPayError(
-        message: 'Failed to create payment request: $e',
-        code: 'CREATE_PAYMENT_REQUEST_FAILED',
-      );
-    }
-
-    if (!context.mounted) return const BushaPayCancelled();
-
-    // 2. Show the payment-method chooser.
+    // 1. Show the payment-method chooser.
     final choice = await showModalBottomSheet<PaymentChoice>(
       context: context,
       isScrollControlled: true,
@@ -170,22 +145,22 @@ class BushaPay {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (_) => PaymentMethodChooser(paymentRequest: paymentRequest),
+      builder: (_) => PaymentMethodChooser(config: config),
     );
 
     if (choice == null) return const BushaPayCancelled();
     if (!context.mounted) return const BushaPayCancelled();
 
-    // 3. Route to the chosen path.
+    // 2. Route to the chosen path.
     if (choice == PaymentChoice.bushaApp) {
-      final deepLink = _buildBushaAppDeepLink(paymentRequest.id);
-      if (deepLink case final deepLink? when await canLaunchUrl(deepLink)) {
+      final deepLink = _buildBushaAppDeepLink(config);
+      if (deepLink != null && await canLaunchUrl(deepLink)) {
         return _launchBushaApp(deepLink);
       }
       // Busha app not installed → fall through to the web checkout.
     }
 
-    // 4. WebView path (chosen directly, or fallback).
+    // 3. WebView path (chosen directly, or fallback).
     if (!context.mounted) return const BushaPayCancelled();
     final result = await showModalBottomSheet<BushaPayResult>(
       context: context,
@@ -194,8 +169,7 @@ class BushaPay {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (_) =>
-          BushaPaySheet(config: config.copyWith(sourceId: paymentRequest.id)),
+      builder: (_) => BushaPaySheet(config: config),
     );
     return result ?? const BushaPayCancelled();
   }
@@ -211,12 +185,13 @@ class BushaPay {
     return null;
   }
 
-  /// Builds the Busha app deep link:
-  /// `<scheme>://busha.co/pay?id=<paymentRequestId>&callback_url=<callbackUrl>`.
+  /// Builds the Busha app deep link with the minimum fields required for
+  /// the Busha app to create the payment server-side:
   ///
-  /// The callback URL is passed so the Busha app knows where to return the
-  /// payment result when the user finishes.
-  static Uri? _buildBushaAppDeepLink(String paymentRequestId) {
+  /// `<scheme>://busha.co/pay?public_key=…&quote_amount=…&quote_currency=…&target_currency=…&reference=…&callback_url=…`
+  ///
+  /// `reference` is only included when the merchant provided one on [config].
+  static Uri? _buildBushaAppDeepLink(BushaPayConfig config) {
     final scheme = _bushaAppScheme;
     if (scheme == null) return null;
     return Uri(
@@ -224,7 +199,11 @@ class BushaPay {
       host: 'busha.co',
       path: '/pay',
       queryParameters: {
-        'id': paymentRequestId,
+        'public_key': publicKey,
+        'quote_amount': config.quoteAmount,
+        'quote_currency': config.quoteCurrency,
+        'target_currency': config.targetCurrency,
+        if (config.reference != null) 'reference': config.reference!,
         'callback_url': callbackUrl,
       },
     );
@@ -285,13 +264,20 @@ class BushaPay {
     final paymentRequestId = uri.queryParameters['paymentRequestId'] ?? '';
     final checkoutId = uri.queryParameters['checkoutId'] ?? '';
 
-    if (status == 'completed') {
-      return BushaPaySuccess.fromCallback(
-        paymentId: paymentRequestId,
-        checkoutId: checkoutId,
-      );
+    switch (status) {
+      case 'completed':
+        return BushaPaySuccess.fromCallback(
+          paymentId: paymentRequestId,
+          checkoutId: checkoutId,
+        );
+      case 'cancelled':
+        return const BushaPayCancelled();
+      default:
+        final errorCode = uri.queryParameters['error_code'] ?? status ?? 'unknown';
+        final errorMessage =
+            uri.queryParameters['error_message'] ?? 'Payment failed';
+        return BushaPayError(message: errorMessage, code: errorCode);
     }
-    return BushaPayError(message: 'Payment failed', code: status ?? 'unknown');
   }
 
   // Internal: direct-launch flow waiting for a callback URL.

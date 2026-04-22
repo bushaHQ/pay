@@ -154,7 +154,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   quoteAmount: '200000',
                   quoteCurrency: 'NGN',
                   targetCurrency: 'USDT',
-                  sourceCurrency: 'BTC',
+                  sourceCurrency: 'USDT',
                   metaName: 'Test Customer',
                   metaEmail: 'test@example.com',
                 ),

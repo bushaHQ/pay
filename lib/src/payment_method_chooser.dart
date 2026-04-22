@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import 'payment_request.dart';
+import '../busha_pay_config.dart';
 
 enum PaymentChoice { bushaApp, stablecoins }
 
-/// Bottom-sheet chooser shown after [BushaPay.checkout] creates the
-/// payment request. Lets the user pick between paying via the installed
-/// Busha app (deep link) or stable coins (web checkout).
+/// Bottom-sheet chooser shown when [BushaPay.checkout] is invoked.
+/// Lets the user pick between paying via the installed Busha app (deep
+/// link) or stable coins (web checkout).
 class PaymentMethodChooser extends StatelessWidget {
-  final PaymentRequest paymentRequest;
+  final BushaPayConfig config;
 
-  const PaymentMethodChooser({super.key, required this.paymentRequest});
+  const PaymentMethodChooser({super.key, required this.config});
 
   @override
   Widget build(BuildContext context) {
@@ -36,24 +36,15 @@ class PaymentMethodChooser extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Amount + merchant
+            // Amount
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  Text(
-                    'Pay ${_formatAmount(paymentRequest.quoteAmount)} ${paymentRequest.quoteCurrency}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'to ${paymentRequest.merchantName ?? 'merchant'}',
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                  ),
-                ],
+              child: Text(
+                'Pay ${_formatAmount(config.quoteAmount)} ${config.quoteCurrency}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
 
