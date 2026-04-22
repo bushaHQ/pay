@@ -1,0 +1,27 @@
+name: busha_pay
+description: Official Busha Pay SDK for Flutter. Accept crypto payments in your app with a single integration.
+version: 1.0.0
+homepage: https://github.com/bushaHQ/busha-pay-flutter
+repository: https://github.com/bushaHQ/busha-pay-flutter
+issue_tracker: https://github.com/bushaHQ/busha-pay-flutter/issues
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_inappwebview: ^6.1.5
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.1.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  assets:
+    - assets/busha_pay_form_dart.html
