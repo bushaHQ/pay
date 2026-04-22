@@ -211,7 +211,11 @@ class BushaPay {
     return null;
   }
 
-  /// Builds `<scheme>://busha.co/pay?id=<paymentRequestId>`.
+  /// Builds the Busha app deep link:
+  /// `<scheme>://busha.co/pay?id=<paymentRequestId>&callback_url=<callbackUrl>`.
+  ///
+  /// The callback URL is passed so the Busha app knows where to return the
+  /// payment result when the user finishes.
   static Uri? _buildBushaAppDeepLink(String paymentRequestId) {
     final scheme = _bushaAppScheme;
     if (scheme == null) return null;
@@ -219,7 +223,10 @@ class BushaPay {
       scheme: scheme,
       host: 'busha.co',
       path: '/pay',
-      queryParameters: {'id': paymentRequestId},
+      queryParameters: {
+        'id': paymentRequestId,
+        'callback_url': callbackUrl,
+      },
     );
   }
 
