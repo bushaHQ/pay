@@ -3,10 +3,10 @@ SHARED_HTML = shared/busha_pay_checkout.html
 # Copy shared assets into each SDK
 .PHONY: sync
 sync:
-	cp $(SHARED_HTML) flutter/assets/busha_pay_checkout.html
-	cp $(SHARED_HTML) android/pay-android/src/main/assets/busha_pay_checkout.html
-	cp $(SHARED_HTML) ios/Sources/BushaPay/Resources/busha_pay_checkout.html
-	cp $(SHARED_HTML) react-native/assets/busha_pay_checkout.html
+	@mkdir -p flutter/assets && cp $(SHARED_HTML) flutter/assets/busha_pay_checkout.html
+	@mkdir -p android/pay-android/src/main/assets && cp $(SHARED_HTML) android/pay-android/src/main/assets/busha_pay_checkout.html
+	@mkdir -p ios/Sources/BushaPay/Resources && cp $(SHARED_HTML) ios/Sources/BushaPay/Resources/busha_pay_checkout.html
+	@mkdir -p react-native/assets && cp $(SHARED_HTML) react-native/assets/busha_pay_checkout.html
 
 # Build each SDK
 .PHONY: build-flutter build-android build-ios build-rn
