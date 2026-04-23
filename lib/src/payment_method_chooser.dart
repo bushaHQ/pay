@@ -24,7 +24,6 @@ class PaymentMethodChooser extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Container(
               margin: const EdgeInsets.only(top: 8),
               width: 40,
@@ -35,8 +34,6 @@ class PaymentMethodChooser extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Amount
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
@@ -47,11 +44,8 @@ class PaymentMethodChooser extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
             const Divider(height: 1),
-
-            // Options
             _OptionTile(
               emoji: '🟢',
               title: 'Pay with Busha app',

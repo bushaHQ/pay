@@ -33,5 +33,4 @@ library;
 
 export 'busha_pay_config.dart';
 export 'busha_pay_result.dart';
-export 'busha_pay_button.dart';
 export 'src/busha_pay_sdk.dart';

@@ -137,7 +137,6 @@ class BushaPay {
     required BuildContext context,
     required BushaPayConfig config,
   }) async {
-    // 1. Show the payment-method chooser.
     final choice = await showModalBottomSheet<PaymentChoice>(
       context: context,
       isScrollControlled: true,
@@ -151,7 +150,6 @@ class BushaPay {
     if (choice == null) return const BushaPayCancelled();
     if (!context.mounted) return const BushaPayCancelled();
 
-    // 2. Route to the chosen path.
     if (choice == PaymentChoice.bushaApp) {
       final deepLink = _buildBushaAppDeepLink(config);
       if (deepLink != null && await canLaunchUrl(deepLink)) {
@@ -160,7 +158,10 @@ class BushaPay {
       // Busha app not installed → fall through to the web checkout.
     }
 
-    // 3. WebView path (chosen directly, or fallback).
+    final autoSelect = choice == PaymentChoice.bushaApp
+        ? PugPayAutoSelect.bushaApp
+        : PugPayAutoSelect.stablecoins;
+
     if (!context.mounted) return const BushaPayCancelled();
     final result = await showModalBottomSheet<BushaPayResult>(
       context: context,
@@ -169,7 +170,10 @@ class BushaPay {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (_) => BushaPaySheet(config: config),
+      builder: (_) => BushaPaySheet(
+        config: config,
+        autoSelect: autoSelect,
+      ),
     );
     return result ?? const BushaPayCancelled();
   }
@@ -185,12 +189,9 @@ class BushaPay {
     return null;
   }
 
-  /// Builds the Busha app deep link with the minimum fields required for
-  /// the Busha app to create the payment server-side:
-  ///
-  /// `<scheme>://busha.co/pay?public_key=…&quote_amount=…&quote_currency=…&target_currency=…&reference=…&callback_url=…`
-  ///
-  /// `reference` is only included when the merchant provided one on [config].
+  /// Builds the Busha app deep link carrying the fields required for the
+  /// Busha app to create the payment server-side. `reference` is only
+  /// included when the merchant provided one on [config].
   static Uri? _buildBushaAppDeepLink(BushaPayConfig config) {
     final scheme = _bushaAppScheme;
     if (scheme == null) return null;
@@ -246,13 +247,11 @@ class BushaPay {
   /// Returns `true` if the URL was handled by the SDK.
   static bool handleDeepLink(Uri uri) {
     if (uri.scheme == callbackScheme && uri.host == 'callback') {
-      // If we launched the Busha app directly, resolve that flow.
       final completer = _directLaunchCompleter;
       if (completer != null && !completer.isCompleted) {
         completer.complete(_parseCallback(uri));
         return true;
       }
-      // Otherwise forward to the active web-checkout sheet.
       _pendingCallbackHandler?.call(uri);
       return true;
     }
@@ -281,21 +280,14 @@ class BushaPay {
     }
   }
 
-  // Internal: direct-launch flow waiting for a callback URL.
   static Completer<BushaPayResult>? _directLaunchCompleter;
-
-  // Internal: registered by the active WebView sheet.
   static void Function(Uri)? _pendingCallbackHandler;
 
   /// Register a callback handler for the active checkout session.
-  static void registerCallbackHandler(void Function(Uri) handler) {
-    _pendingCallbackHandler = handler;
-  }
+  static void registerCallbackHandler(void Function(Uri) handler) => _pendingCallbackHandler = handler;
 
   /// Unregister the callback handler.
-  static void unregisterCallbackHandler() {
-    _pendingCallbackHandler = null;
-  }
+  static void unregisterCallbackHandler() => _pendingCallbackHandler = null;
 }
 
 /// Fires its [onResume] callback whenever the app returns to the foreground.

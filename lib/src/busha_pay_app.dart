@@ -10,10 +10,42 @@ import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
 import 'busha_pay_sdk.dart';
 
+/// Which option (if any) the sheet should auto-click on pug-pay's
+/// payment-method chooser, so the user skips straight to the target flow.
+enum PugPayAutoSelect {
+  none,
+  bushaApp,
+  stablecoins;
+
+  /// The `?method=` query-param value pug-pay reads on newer builds.
+  String? get queryParam => switch (this) {
+    PugPayAutoSelect.bushaApp => 'busha',
+    PugPayAutoSelect.stablecoins => 'stablecoins',
+    PugPayAutoSelect.none => null,
+  };
+
+  /// The leading text of the row in pug-pay's chooser to click as a
+  /// fallback on older pug-pay builds that don't honour `?method=`.
+  String? get rowTextPrefix => switch (this) {
+    PugPayAutoSelect.bushaApp => 'Busha',
+    PugPayAutoSelect.stablecoins => 'Stablecoins',
+    PugPayAutoSelect.none => null,
+  };
+}
+
 class BushaPaySheet extends StatefulWidget {
   final BushaPayConfig config;
 
-  const BushaPaySheet({super.key, required this.config});
+  /// Which option on pug-pay's chooser page to auto-click, if any. Set
+  /// from [BushaPay.checkout] based on what the user picked on our own
+  /// chooser.
+  final PugPayAutoSelect autoSelect;
+
+  const BushaPaySheet({
+    super.key,
+    required this.config,
+    this.autoSelect = PugPayAutoSelect.none,
+  });
 
   @override
   State<BushaPaySheet> createState() => _BushaPaySheetState();
@@ -30,7 +62,6 @@ const String _deepLinkEnablerScript = r'''
 (function() {
   try {
     delete navigator.getInstalledRelatedApps;
-    // If `delete` doesn't stick (some engines), shadow with undefined.
     Object.defineProperty(navigator, 'getInstalledRelatedApps', {
       configurable: true,
       get: function() { return undefined; },
@@ -73,8 +104,6 @@ class _BushaPaySheetState extends State<BushaPaySheet>
 
   void _onDeepLinkReceived(Uri uri) {
     if (_resultDelivered) return;
-
-    print('BushaPay: Received deep link: $uri');
 
     if (uri.scheme == BushaPay.callbackScheme && uri.host == 'callback') {
       final status = uri.queryParameters['status'];
@@ -171,6 +200,44 @@ class _BushaPaySheetState extends State<BushaPaySheet>
     );
   }
 
+  /// Auto-click the target option on pug-pay's chooser page so the user
+  /// skips straight to that flow. Uses a MutationObserver in case the
+  /// chooser hasn't rendered yet when this script runs. Serves as a
+  /// fallback for pug-pay builds that don't honour the `?method=` URL
+  /// param.
+  void _injectAutoSelect(InAppWebViewController controller) {
+    final rowPrefix = widget.autoSelect.rowTextPrefix;
+    if (rowPrefix == null) return;
+    final escaped = jsonEncode(rowPrefix);
+    controller.evaluateJavascript(
+      source:
+          '''
+      (function() {
+        if (window.__bushaPayAutoSelectDone) return;
+        var target = $escaped;
+        function tryClick() {
+          var items = document.querySelectorAll('[role="button"]');
+          for (var i = 0; i < items.length; i++) {
+            var text = (items[i].textContent || '').trim();
+            if (text.indexOf(target) === 0) {
+              window.__bushaPayAutoSelectDone = true;
+              items[i].click();
+              return true;
+            }
+          }
+          return false;
+        }
+        if (tryClick()) return;
+        var obs = new MutationObserver(function() {
+          if (tryClick()) obs.disconnect();
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+        setTimeout(function() { obs.disconnect(); }, 10000);
+      })();
+    ''',
+    );
+  }
+
   /// Submit the checkout form via JS after the bridge HTML loads.
   void _submitCheckoutForm() {
     final controller = _webViewController;
@@ -182,9 +249,13 @@ class _BushaPaySheetState extends State<BushaPaySheet>
       checkoutUrl: BushaPay.checkoutUrl,
     );
 
-    // Add the checkout URL as an internal field for the JS to use.
+    final queryMethod = widget.autoSelect.queryParam;
+    final formAction = queryMethod != null
+        ? '${BushaPay.checkoutUrl}?method=$queryMethod'
+        : BushaPay.checkoutUrl;
+
     final config = <String, String>{
-      '_checkoutUrl': BushaPay.checkoutUrl,
+      '_checkoutUrl': formAction,
       ...formFields,
     };
 
@@ -213,7 +284,6 @@ class _BushaPaySheetState extends State<BushaPaySheet>
       ),
       child: Column(
         children: [
-          // WebView
           Expanded(
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(
@@ -274,6 +344,7 @@ class _BushaPaySheetState extends State<BushaPaySheet>
                         } else if (!_checkoutInitialized) {
                           setState(() => _checkoutInitialized = true);
                           _injectMessageListener(controller);
+                          _injectAutoSelect(controller);
                         }
                       },
                       onConsoleMessage: (controller, consoleMessage) {
