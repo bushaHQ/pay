@@ -40,144 +40,345 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Busha Pay Demo',
+      title: 'Busha Store',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00C853)),
         useMaterial3: true,
       ),
-      home: const CheckoutPage(),
+      home: const HomePage(),
     );
   }
 }
 
-class CheckoutPage extends StatefulWidget {
-  const CheckoutPage({super.key});
+class Product {
+  final String id;
+  final String name;
+  final String description;
+  final String price;
+  final String currency;
+  final String emoji;
 
-  @override
-  State<CheckoutPage> createState() => _CheckoutPageState();
+  const Product({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.currency,
+    required this.emoji,
+  });
 }
 
-class _CheckoutPageState extends State<CheckoutPage> {
-  String _status = '';
+const _products = <Product>[
+  Product(
+    id: 'p1',
+    name: 'Macbook Pro 13"',
+    description: 'Apple M3 chip, 16GB unified memory, 512GB SSD storage.',
+    price: '20000',
+    currency: 'NGN',
+    emoji: '💻',
+  ),
+  Product(
+    id: 'p2',
+    name: 'iPhone 15 Pro',
+    description: '256GB, Titanium. The best iPhone yet.',
+    price: '15000',
+    currency: 'NGN',
+    emoji: '📱',
+  ),
+  Product(
+    id: 'p3',
+    name: 'AirPods Pro',
+    description:
+        'Active Noise Cancellation, Transparency mode, Adaptive Audio.',
+    price: '8500',
+    currency: 'NGN',
+    emoji: '🎧',
+  ),
+];
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(title: const Text('Busha Store')),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _products.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final product = _products[index];
+          return Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ProductDetailPage(product: product),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Text(product.emoji, style: const TextStyle(fontSize: 40)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₦${product.price}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductDetailPage extends StatefulWidget {
+  final Product product;
+
+  const ProductDetailPage({super.key, required this.product});
+
+  @override
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
+}
+
+class _ProductDetailPageState extends State<ProductDetailPage> {
+  bool _isProcessing = false;
+
+  void _handleBuy() {
+    setState(() => _isProcessing = true);
+    BushaPay.checkout(
+      context: context,
+      config: BushaPayConfig(
+        quoteAmount: widget.product.price,
+        quoteCurrency: widget.product.currency,
+        targetCurrency: 'USDT',
+        sourceCurrency: 'USDT',
+        reference:
+            'ORDER_${widget.product.id}_${DateTime.now().millisecondsSinceEpoch}',
+        metaName: 'Test Customer',
+        metaEmail: 'test@example.com',
+      ),
+      onComplete: (result) {
+        if (!mounted) return;
+        setState(() => _isProcessing = false);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                ReceiptPage(product: widget.product, result: result),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final product = widget.product;
+    return Scaffold(
+      appBar: AppBar(title: Text(product.name)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Product info
-            const Card(
+            Center(
+              child: Text(product.emoji, style: const TextStyle(fontSize: 120)),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              product.name,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '₦${product.price}',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              product.description,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const Spacer(),
+            FilledButton(
+              onPressed: _isProcessing ? null : _handleBuy,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFF00C853),
+              ),
+              child: _isProcessing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Buy for ₦${product.price}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ReceiptPage extends StatelessWidget {
+  final Product product;
+  final BushaPayResult result;
+
+  const ReceiptPage({super.key, required this.product, required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, color, title, details) = switch (result) {
+      BushaPaySuccess(:final paymentId, :final status) => (
+        Icons.check_circle,
+        Colors.green,
+        'Payment successful',
+        'Payment ID: $paymentId\nStatus: $status',
+      ),
+      BushaPayCancelled() => (
+        Icons.cancel_outlined,
+        Colors.orange,
+        'Payment cancelled',
+        'You cancelled the payment.',
+      ),
+      BushaPayError(:final message, :final code) => (
+        Icons.error_outline,
+        Colors.red,
+        'Payment failed',
+        'Error: $message${code != null ? '\nCode: $code' : ''}',
+      ),
+    };
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Receipt')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 32),
+            Icon(icon, size: 80, color: color),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Macbook Pro 2025 13"',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          product.emoji,
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '₦${product.price}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 8),
+                    const Divider(height: 32),
                     Text(
-                      '₦10,000',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
+                      details,
+                      style: const TextStyle(
+                        fontFamily: 'Courier',
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-
             const Spacer(),
-
-            // Status
-            if (_status.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  _status,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _status.contains('Success')
-                        ? Colors.green
-                        : _status.contains('Error')
-                        ? Colors.red
-                        : Colors.grey,
-                  ),
-                ),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-
-            // Option 1: Branded button
-            BushaPayButton(
-              config: const BushaPayConfig(
-                quoteAmount: '10000',
-                quoteCurrency: 'NGN',
-                targetCurrency: 'NGN',
-                sourceCurrency: 'USDT',
-                metaName: 'Test Customer',
-                metaEmail: 'test@example.com',
-              ),
-              onComplete: _handleResult,
+              child: const Text('Back to store'),
             ),
-
-            const SizedBox(height: 12),
-
-            // Option 2: Outlined style
-            BushaPayButton(
-              config: const BushaPayConfig(
-                quoteAmount: '10000',
-                quoteCurrency: 'NGN',
-                targetCurrency: 'NGN',
-                sourceCurrency: 'USDT',
-                metaName: 'Test Customer',
-                metaEmail: 'test@example.com',
-              ),
-              style: BushaPayButtonStyle.outlined,
-              onComplete: _handleResult,
-            ),
-
-            const SizedBox(height: 12),
-
-            // Option 3: Headless (custom button)
-            ElevatedButton(
-              onPressed: () => BushaPay.checkout(
-                context: context,
-                config: const BushaPayConfig(
-                  quoteAmount: '200000',
-                  quoteCurrency: 'NGN',
-                  targetCurrency: 'USDT',
-                  sourceCurrency: 'USDT',
-                  metaName: 'Test Customer',
-                  metaEmail: 'test@example.com',
-                ),
-                onComplete: _handleResult,
-              ),
-              child: const Text('Custom Pay Button'),
-            ),
-
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
-  }
-
-  void _handleResult(BushaPayResult result) {
-    setState(() {
-      _status = switch (result) {
-        BushaPaySuccess(:final paymentId, :final hasFullData) =>
-          '✅ Success! Payment ID: $paymentId (full data: $hasFullData)',
-        BushaPayCancelled() => '⚠️ Cancelled by user',
-        BushaPayError(:final message) => '❌ Error: $message',
-      };
-    });
   }
 }

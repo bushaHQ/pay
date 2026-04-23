@@ -273,7 +273,8 @@ class BushaPay {
       case 'cancelled':
         return const BushaPayCancelled();
       default:
-        final errorCode = uri.queryParameters['error_code'] ?? status ?? 'unknown';
+        final errorCode =
+            uri.queryParameters['error_code'] ?? status ?? 'unknown';
         final errorMessage =
             uri.queryParameters['error_message'] ?? 'Payment failed';
         return BushaPayError(message: errorMessage, code: errorCode);
