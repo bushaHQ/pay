@@ -1,0 +1,177 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdk:
+        description: 'SDK to release ("all" releases every SDK at once)'
+        required: true
+        type: choice
+        options:
+          - flutter
+          - android
+          - ios
+          - react-native
+          - all
+      version:
+        description: 'Version (e.g. 1.0.0). Leave empty to auto-bump from conventional commits.'
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ github.event.inputs.sdk }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release ${{ inputs.sdk }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Auto-bump version
+        id: semver
+        if: inputs.version == ''
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ github.token }}
+          branch: ${{ github.ref_name }}
+          patchList: fix, bugfix, perf, refactor, test, tests, chore
+          fallbackTag: v0.0.1
+
+      - name: Resolve version + tag
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${{ steps.semver.outputs.nextStrict }}"
+          fi
+          if [ "${{ inputs.sdk }}" = "all" ]; then
+            TAG="v${VERSION}"
+          else
+            TAG="${{ inputs.sdk }}/v${VERSION}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Resolved version: ${VERSION}"
+          echo "Resolved tag:     ${TAG}"
+
+      - name: Sync shared assets
+        run: make sync
+
+      - name: Setup Flutter
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.0
+          cache: true
+
+      - name: Bump flutter/pubspec.yaml
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        run: |
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.version }}/" flutter/pubspec.yaml
+          grep '^version:' flutter/pubspec.yaml
+
+      - name: Build Flutter
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        run: make build-flutter
+
+      - name: Test Flutter
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        run: cd flutter && flutter test
+
+      - name: Build Android
+        if: inputs.sdk == 'android' || inputs.sdk == 'all'
+        run: echo "Android SDK not yet implemented — skipping build."
+
+      - name: Build iOS
+        if: inputs.sdk == 'ios' || inputs.sdk == 'all'
+        run: echo "iOS SDK not yet implemented — skipping build."
+
+      - name: Build React Native
+        if: inputs.sdk == 'react-native' || inputs.sdk == 'all'
+        run: echo "React Native SDK not yet implemented — skipping build."
+
+      - name: Commit version bump
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit_message: 'build(release): ${{ steps.version.outputs.tag }} [skip ci]'
+          file_pattern: flutter/pubspec.yaml
+
+      - name: Package artifacts
+        run: |
+          mkdir -p release
+          pack() {
+            local name=$1 dir=$2
+            rsync -a \
+              --exclude='.dart_tool' \
+              --exclude='.flutter-plugins-dependencies' \
+              --exclude='build' \
+              --exclude='.idea' \
+              --exclude='.vscode' \
+              --exclude='*.iml' \
+              --exclude='node_modules' \
+              --exclude='.DS_Store' \
+              "$dir/" "release/${name}/"
+            (cd release && zip -rq "${name}-${{ steps.version.outputs.version }}.zip" "$name")
+          }
+          case "${{ inputs.sdk }}" in
+            flutter)       pack busha_pay_flutter flutter ;;
+            android)       pack busha_pay_android android ;;
+            ios)           pack busha_pay_ios ios ;;
+            react-native)  pack busha_pay_react_native react-native ;;
+            all)
+              pack busha_pay_flutter flutter
+              pack busha_pay_android android
+              pack busha_pay_ios ios
+              pack busha_pay_react_native react-native
+              ;;
+          esac
+          ls -la release/
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.version.outputs.tag }}
+          generateReleaseNotes: true
+          artifacts: release/*.zip
+
+  update-changelog:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Update CHANGELOG
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ needs.release.outputs.tag }}
+
+      - name: Commit CHANGELOG.md
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          branch: ${{ github.ref_name }}
+          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit_message: 'docs: ${{ needs.release.outputs.tag }} [skip ci]'
+          file_pattern: CHANGELOG.md
