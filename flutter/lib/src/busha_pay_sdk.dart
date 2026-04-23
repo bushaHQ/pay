@@ -64,9 +64,7 @@ class BushaPay {
   static bool get isDevMode => _environment == BushaEnvironment.sandbox;
 
   /// The checkout page URL for the current environment.
-  static String get checkoutUrl => isDevMode
-      ? 'https://staging.pay.busha.co/pay'
-      : 'https://pay.busha.co/pay';
+  static String get checkoutUrl => isDevMode ? 'https://staging.pay.busha.co/pay' : 'https://pay.busha.co/pay';
 
   /// The configured public key.
   static String get publicKey {
@@ -89,10 +87,7 @@ class BushaPay {
   ///   runApp(const MyApp());
   /// }
   /// ```
-  static Future<void> init({
-    required String publicKey,
-    BushaEnvironment environment = BushaEnvironment.live,
-  }) async {
+  static Future<void> init({required String publicKey, BushaEnvironment environment = BushaEnvironment.live}) async {
     _publicKey = publicKey;
     _environment = environment;
 
@@ -117,12 +112,7 @@ class BushaPay {
     assert(isInitialized, 'BushaPay.init() must be called before checkout()');
 
     if (_isCheckoutInProgress) {
-      onComplete(
-        const BushaPayError(
-          message: 'Another payment is already in progress',
-          code: 'CHECKOUT_IN_PROGRESS',
-        ),
-      );
+      onComplete(const BushaPayError(message: 'Another payment is already in progress', code: 'CHECKOUT_IN_PROGRESS'));
       return;
     }
 
@@ -133,10 +123,7 @@ class BushaPay {
     });
   }
 
-  static Future<BushaPayResult> _runCheckout({
-    required BuildContext context,
-    required BushaPayConfig config,
-  }) async {
+  static Future<BushaPayResult> _runCheckout({required BuildContext context, required BushaPayConfig config}) async {
     final choice = await showModalBottomSheet<PaymentChoice>(
       context: context,
       isScrollControlled: true,
@@ -158,9 +145,7 @@ class BushaPay {
       // Busha app not installed → fall through to the web checkout.
     }
 
-    final autoSelect = choice == PaymentChoice.bushaApp
-        ? PugPayAutoSelect.bushaApp
-        : PugPayAutoSelect.stablecoins;
+    final autoSelect = choice == PaymentChoice.bushaApp ? PugPayAutoSelect.bushaApp : PugPayAutoSelect.stablecoins;
 
     if (!context.mounted) return const BushaPayCancelled();
     final result = await showModalBottomSheet<BushaPayResult>(
@@ -170,10 +155,7 @@ class BushaPay {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (_) => BushaPaySheet(
-        config: config,
-        autoSelect: autoSelect,
-      ),
+      builder: (_) => BushaPaySheet(config: config, autoSelect: autoSelect),
     );
     return result ?? const BushaPayCancelled();
   }
@@ -265,17 +247,12 @@ class BushaPay {
 
     switch (status) {
       case 'completed':
-        return BushaPaySuccess.fromCallback(
-          paymentId: paymentRequestId,
-          checkoutId: checkoutId,
-        );
+        return BushaPaySuccess.fromCallback(paymentId: paymentRequestId, checkoutId: checkoutId);
       case 'cancelled':
         return const BushaPayCancelled();
       default:
-        final errorCode =
-            uri.queryParameters['error_code'] ?? status ?? 'unknown';
-        final errorMessage =
-            uri.queryParameters['error_message'] ?? 'Payment failed';
+        final errorCode = uri.queryParameters['error_code'] ?? status ?? 'unknown';
+        final errorMessage = uri.queryParameters['error_message'] ?? 'Payment failed';
         return BushaPayError(message: errorMessage, code: errorCode);
     }
   }

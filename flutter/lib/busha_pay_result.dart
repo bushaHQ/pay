@@ -90,14 +90,8 @@ class BushaPaySuccess extends BushaPayResult {
   bool get hasFullData => rawData != null;
 
   /// Creates a success result from a callback deep link (Path B — limited data).
-  factory BushaPaySuccess.fromCallback({
-    required String paymentId,
-    required String checkoutId,
-  }) => BushaPaySuccess(
-      paymentId: paymentId,
-      checkoutId: checkoutId,
-      status: 'completed',
-    );
+  factory BushaPaySuccess.fromCallback({required String paymentId, required String checkoutId}) =>
+      BushaPaySuccess(paymentId: paymentId, checkoutId: checkoutId, status: 'completed');
 
   /// Creates a success result from commerce-js onSuccess data (Path A — full data).
   factory BushaPaySuccess.fromCommerceJs(Map<String, dynamic> payload) {
@@ -121,8 +115,7 @@ class BushaPaySuccess extends BushaPayResult {
   }
 
   @override
-  String toString() =>
-      'BushaPaySuccess(paymentId: $paymentId, status: $status, hasFullData: $hasFullData)';
+  String toString() => 'BushaPaySuccess(paymentId: $paymentId, status: $status, hasFullData: $hasFullData)';
 }
 
 /// User dismissed the checkout or backed out of the Busha app without paying.

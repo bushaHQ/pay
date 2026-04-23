@@ -41,23 +41,12 @@ class BushaPaySheet extends StatefulWidget {
   /// chooser.
   final PugPayAutoSelect autoSelect;
 
-  const BushaPaySheet({
-    super.key,
-    required this.config,
-    this.autoSelect = PugPayAutoSelect.none,
-  });
+  const BushaPaySheet({super.key, required this.config, this.autoSelect = PugPayAutoSelect.none});
 
   @override
   State<BushaPaySheet> createState() => _BushaPaySheetState();
 }
 
-/// JS that runs at document start, before the checkout's own scripts load.
-///
-/// The checkout's "Pay with Busha app" click handler only fires the deep
-/// link when `navigator.getInstalledRelatedApps` is undefined (fallback
-/// branch in PaymentMethods.tsx). On iOS WKWebView the API exists but
-/// returns an empty list, so the deep link is silently skipped. Deleting
-/// the API forces the fallback path that calls `getCheckoutDeepLink()`.
 const String _deepLinkEnablerScript = r'''
 (function() {
   try {
@@ -70,8 +59,40 @@ const String _deepLinkEnablerScript = r'''
 })();
 ''';
 
-class _BushaPaySheetState extends State<BushaPaySheet>
-    with WidgetsBindingObserver {
+const String _bushaPayBridgeShim = r'''
+(function() {
+  window.BushaPayBridge = function(payload) {
+    if (window.flutter_inappwebview) {
+      window.flutter_inappwebview.callHandler('BushaPayBridge', payload);
+    }
+  };
+})();
+''';
+
+const String _messageListenerScript = r'''
+(function() {
+  if (window.__bushaPayListenerAdded) return;
+  window.__bushaPayListenerAdded = true;
+  window.addEventListener('message', function(event) {
+    var data = event.data;
+    if (!data || typeof data !== 'object') return;
+    var status = data.status;
+    var payload = null;
+    if (status === 'INITIALIZED') {
+      payload = JSON.stringify({ type: 'ready', data: {} });
+    } else if (status === 'CANCELLED') {
+      payload = JSON.stringify({ type: 'close', data: data.data || {} });
+    } else if (status === 'COMPLETED') {
+      payload = JSON.stringify({ type: 'success', data: data });
+    }
+    if (payload && window.BushaPayBridge) {
+      window.BushaPayBridge(payload);
+    }
+  });
+})();
+''';
+
+class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserver {
   InAppWebViewController? _webViewController;
   bool _resultDelivered = false;
   String? _htmlContent;
@@ -87,9 +108,7 @@ class _BushaPaySheetState extends State<BushaPaySheet>
   }
 
   Future<void> _loadHtml() async {
-    final html = await rootBundle.loadString(
-      'packages/busha_pay/assets/busha_pay_checkout.html',
-    );
+    final html = await rootBundle.loadString('packages/busha_pay/assets/busha_pay_checkout.html');
     if (mounted) {
       setState(() => _htmlContent = html);
     }
@@ -111,16 +130,9 @@ class _BushaPaySheetState extends State<BushaPaySheet>
       final checkoutId = uri.queryParameters['checkoutId'] ?? '';
 
       if (status == 'completed') {
-        _deliverResult(
-          BushaPaySuccess.fromCallback(
-            paymentId: paymentRequestId,
-            checkoutId: checkoutId,
-          ),
-        );
+        _deliverResult(BushaPaySuccess.fromCallback(paymentId: paymentRequestId, checkoutId: checkoutId));
       } else {
-        _deliverResult(
-          BushaPayError(message: 'Payment failed', code: status ?? 'unknown'),
-        );
+        _deliverResult(BushaPayError(message: 'Payment failed', code: status ?? 'unknown'));
       }
     }
   }
@@ -148,9 +160,7 @@ class _BushaPaySheetState extends State<BushaPaySheet>
             setState(() => _checkoutInitialized = true);
           }
         case 'success':
-          _deliverResult(
-            BushaPaySuccess.fromCommerceJs(data as Map<String, dynamic>),
-          );
+          _deliverResult(BushaPaySuccess.fromCommerceJs(data as Map<String, dynamic>));
         case 'close':
           _deliverResult(const BushaPayCancelled());
         case 'error':
@@ -167,44 +177,7 @@ class _BushaPaySheetState extends State<BushaPaySheet>
     }
   }
 
-  /// Re-install the postMessage listener on the checkout page.
-  ///
-  /// The bridge HTML's own listener is destroyed when the form submits
-  /// and the WebView navigates to the checkout page. We inject an
-  /// equivalent listener into the checkout page's JS context so we can
-  /// still receive INITIALIZED / CANCELLED / COMPLETED statuses.
-  void _injectMessageListener(InAppWebViewController controller) {
-    controller.evaluateJavascript(
-      source: r'''
-      (function() {
-        if (window.__bushaPayListenerAdded) return;
-        window.__bushaPayListenerAdded = true;
-        window.addEventListener('message', function(event) {
-          var data = event.data;
-          if (!data || typeof data !== 'object') return;
-          var status = data.status;
-          var payload = null;
-          if (status === 'INITIALIZED') {
-            payload = JSON.stringify({ type: 'ready', data: {} });
-          } else if (status === 'CANCELLED') {
-            payload = JSON.stringify({ type: 'close', data: data.data || {} });
-          } else if (status === 'COMPLETED') {
-            payload = JSON.stringify({ type: 'success', data: data });
-          }
-          if (payload && window.flutter_inappwebview) {
-            window.flutter_inappwebview.callHandler('BushaPayBridge', payload);
-          }
-        });
-      })();
-    ''',
-    );
-  }
 
-  /// Auto-click the target option on pug-pay's chooser page so the user
-  /// skips straight to that flow. Uses a MutationObserver in case the
-  /// chooser hasn't rendered yet when this script runs. Serves as a
-  /// fallback for pug-pay builds that don't honour the `?method=` URL
-  /// param.
   void _injectAutoSelect(InAppWebViewController controller) {
     final rowPrefix = widget.autoSelect.rowTextPrefix;
     if (rowPrefix == null) return;
@@ -250,14 +223,9 @@ class _BushaPaySheetState extends State<BushaPaySheet>
     );
 
     final queryMethod = widget.autoSelect.queryParam;
-    final formAction = queryMethod != null
-        ? '${BushaPay.checkoutUrl}?method=$queryMethod'
-        : BushaPay.checkoutUrl;
+    final formAction = queryMethod != null ? '${BushaPay.checkoutUrl}?method=$queryMethod' : BushaPay.checkoutUrl;
 
-    final config = <String, String>{
-      '_checkoutUrl': formAction,
-      ...formFields,
-    };
+    final config = <String, String>{'_checkoutUrl': formAction, ...formFields};
 
     final configJson = jsonEncode(config);
     controller.evaluateJavascript(source: 'initCheckout($configJson)');
@@ -276,103 +244,91 @@ class _BushaPaySheetState extends State<BushaPaySheet>
 
   @override
   Widget build(BuildContext context) => Container(
-      height: MediaQuery.of(context).size.height * 0.92,
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Stack(
-                children: [
-                  if (_htmlContent != null)
-                    InAppWebView(
-                      initialData: InAppWebViewInitialData(
-                        data: _htmlContent!,
-                        baseUrl: WebUri(BushaPay.checkoutUrl),
-                        historyUrl: WebUri(BushaPay.checkoutUrl),
+    height: MediaQuery.of(context).size.height * 0.92,
+    decoration: const BoxDecoration(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    child: Column(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Stack(
+              children: [
+                if (_htmlContent != null)
+                  InAppWebView(
+                    initialData: InAppWebViewInitialData(
+                      data: _htmlContent!,
+                      baseUrl: WebUri(BushaPay.checkoutUrl),
+                      historyUrl: WebUri(BushaPay.checkoutUrl),
+                    ),
+                    initialUserScripts: UnmodifiableListView([
+                      UserScript(source: _bushaPayBridgeShim, injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START),
+                      UserScript(
+                        source: _messageListenerScript,
+                        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
                       ),
-                      initialUserScripts: UnmodifiableListView([
-                        UserScript(
-                          source: _deepLinkEnablerScript,
-                          injectionTime:
-                              UserScriptInjectionTime.AT_DOCUMENT_START,
-                        ),
-                      ]),
-                      initialSettings: InAppWebViewSettings(
-                        supportMultipleWindows: true,
-                        javaScriptEnabled: true,
-                        domStorageEnabled: true,
-                        javaScriptCanOpenWindowsAutomatically: true,
-                        mixedContentMode:
-                            MixedContentMode.MIXED_CONTENT_COMPATIBILITY_MODE,
-                        transparentBackground: true,
+                      UserScript(
+                        source: _deepLinkEnablerScript,
+                        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
                       ),
-                      onCreateWindow: (_, req) async {
-                        final uri = req.request.url;
-                        return uri != null && await _handleNavigation(uri);
-                      },
-                      shouldOverrideUrlLoading: (_, action) async {
-                        final uri = action.request.url;
-                        if (uri != null && await _handleNavigation(uri)) {
-                          return NavigationActionPolicy.CANCEL;
-                        }
-                        return NavigationActionPolicy.ALLOW;
-                      },
-                      onWebViewCreated: (controller) {
-                        _webViewController = controller;
+                    ]),
+                    initialSettings: InAppWebViewSettings(
+                      supportMultipleWindows: true,
+                      javaScriptEnabled: true,
+                      domStorageEnabled: true,
+                      javaScriptCanOpenWindowsAutomatically: true,
+                      mixedContentMode: MixedContentMode.MIXED_CONTENT_COMPATIBILITY_MODE,
+                      transparentBackground: true,
+                    ),
+                    onCreateWindow: (_, req) async {
+                      final uri = req.request.url;
+                      return uri != null && await _handleNavigation(uri);
+                    },
+                    shouldOverrideUrlLoading: (_, action) async {
+                      final uri = action.request.url;
+                      if (uri != null && await _handleNavigation(uri)) {
+                        return NavigationActionPolicy.CANCEL;
+                      }
+                      return NavigationActionPolicy.ALLOW;
+                    },
+                    onWebViewCreated: (controller) {
+                      _webViewController = controller;
 
-                        controller.addJavaScriptHandler(
-                          handlerName: 'BushaPayBridge',
-                          callback: (args) {
-                            if (args.isNotEmpty) {
-                              _onBridgeMessage(args[0] as String);
-                            }
-                          },
-                        );
-                      },
-                      onLoadStop: (controller, url) {
-                        if (!_formSubmitted) {
-                          _formSubmitted = true;
-                          _submitCheckoutForm();
-                        } else if (!_checkoutInitialized) {
-                          setState(() => _checkoutInitialized = true);
-                          _injectMessageListener(controller);
-                          _injectAutoSelect(controller);
-                        }
-                      },
-                      onConsoleMessage: (controller, consoleMessage) {
-                        debugPrint(
-                          'BushaPay JS [${consoleMessage.messageLevel}]: ${consoleMessage.message}',
-                        );
-                      },
-                      onReceivedError: (controller, request, error) {
-                        debugPrint(
-                          'BushaPay: WebView error: ${error.description} (url=${request.url})',
-                        );
-                      },
+                      controller.addJavaScriptHandler(
+                        handlerName: 'BushaPayBridge',
+                        callback: (args) {
+                          if (args.isNotEmpty) {
+                            _onBridgeMessage(args[0] as String);
+                          }
+                        },
+                      );
+                    },
+                    onLoadStop: (controller, url) {
+                      if (!_formSubmitted) {
+                        _formSubmitted = true;
+                        _submitCheckoutForm();
+                      } else if (!_checkoutInitialized) {
+                        setState(() => _checkoutInitialized = true);
+                        _injectAutoSelect(controller);
+                      }
+                    },
+                    onConsoleMessage: (controller, consoleMessage) => debugPrint('BushaPay JS [${consoleMessage.messageLevel}]: ${consoleMessage.message}'),
+                    onReceivedError: (controller, request, error) => debugPrint('BushaPay: WebView error: ${error.description} (url=${request.url})'),
+                  ),
+                if (!_checkoutInitialized)
+                  Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00C853))),
                     ),
-                  if (!_checkoutInitialized)
-                    Container(
-                      color: Colors.white,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF00C853),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 }
