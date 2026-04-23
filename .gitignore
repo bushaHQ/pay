@@ -1,18 +1,34 @@
-# Dart / Flutter
-.dart_tool/
-.packages
-build/
-pubspec.lock
-.flutter-plugins
-.flutter-plugins-dependencies
+.env
+release/
 
-# IDE
+.DS_Store
+Thumbs.db
 .idea/
 .vscode/
 *.iml
 
-# OS
-.DS_Store
-Thumbs.db
+flutter/.dart_tool/
+flutter/.packages
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/build/
+flutter/pubspec.lock
+flutter/example/.dart_tool/
+flutter/example/.flutter-plugins
+flutter/example/.flutter-plugins-dependencies
+flutter/example/build/
+flutter/example/pubspec.lock
+flutter/example/ios/
 
-.env
+android/**/build/
+android/**/.gradle/
+android/local.properties
+android/.cxx/
+
+ios/.build/
+ios/.swiftpm/
+ios/DerivedData/
+
+react-native/node_modules/
+react-native/dist/
+react-native/coverage/
