@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master, dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      flutter: ${{ steps.filter.outputs.flutter }}
+      android: ${{ steps.filter.outputs.android }}
+      ios: ${{ steps.filter.outputs.ios }}
+      react-native: ${{ steps.filter.outputs.react-native }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            flutter:
+              - 'flutter/**'
+              - 'shared/**'
+              - 'Makefile'
+              - '.github/workflows/ci.yml'
+            android:
+              - 'android/**'
+              - 'shared/**'
+              - 'Makefile'
+              - '.github/workflows/ci.yml'
+            ios:
+              - 'ios/**'
+              - 'shared/**'
+              - 'Makefile'
+              - '.github/workflows/ci.yml'
+            react-native:
+              - 'react-native/**'
+              - 'shared/**'
+              - 'Makefile'
+              - '.github/workflows/ci.yml'
+
+  flutter:
+    name: Flutter
+    needs: changes
+    if: needs.changes.outputs.flutter == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.0
+          cache: true
+
+      - name: Sync shared assets
+        run: make sync
+        working-directory: ${{ github.workspace }}
+
+      - run: flutter pub get
+      - run: dart format --set-exit-if-changed .
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test --coverage
+
+  android:
+    name: Android
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Android SDK not yet implemented — skipping."
+
+  ios:
+    name: iOS
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "iOS SDK not yet implemented — skipping."
+
+  react-native:
+    name: React Native
+    needs: changes
+    if: needs.changes.outputs.react-native == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "React Native SDK not yet implemented — skipping."
