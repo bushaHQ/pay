@@ -243,11 +243,10 @@ class BushaPay {
   static BushaPayResult _parseCallback(Uri uri) {
     final status = uri.queryParameters['status'];
     final paymentRequestId = uri.queryParameters['paymentRequestId'] ?? '';
-    final checkoutId = uri.queryParameters['checkoutId'] ?? '';
 
     switch (status) {
       case 'completed':
-        return BushaPaySuccess.fromCallback(paymentId: paymentRequestId, checkoutId: checkoutId);
+        return BushaPaySuccess.fromCallback(paymentId: paymentRequestId);
       case 'cancelled':
         return const BushaPayCancelled();
       default:
