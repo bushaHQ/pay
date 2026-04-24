@@ -18,11 +18,9 @@ export const parseCallback = (url: string): BushaPayResult => {
   const query = parsed?.query ?? {};
   const status = query.status;
   const paymentRequestId = query.paymentRequestId ?? '';
-  const checkoutId = query.checkoutId ?? '';
-
   switch (status) {
     case 'completed':
-      return successFromCallback(paymentRequestId, checkoutId);
+      return successFromCallback(paymentRequestId);
     case 'cancelled':
       return cancelled();
     default: {

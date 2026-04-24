@@ -127,10 +127,9 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
     if (uri.scheme == BushaPay.callbackScheme && uri.host == 'callback') {
       final status = uri.queryParameters['status'];
       final paymentRequestId = uri.queryParameters['paymentRequestId'] ?? '';
-      final checkoutId = uri.queryParameters['checkoutId'] ?? '';
 
       if (status == 'completed') {
-        _deliverResult(BushaPaySuccess.fromCallback(paymentId: paymentRequestId, checkoutId: checkoutId));
+        _deliverResult(BushaPaySuccess.fromCallback(paymentId: paymentRequestId));
       } else {
         _deliverResult(BushaPayError(message: 'Payment failed', code: status ?? 'unknown'));
       }
@@ -176,7 +175,6 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
       debugPrint('BushaPay: Failed to parse bridge message: $e');
     }
   }
-
 
   void _injectAutoSelect(InAppWebViewController controller) {
     final rowPrefix = widget.autoSelect.rowTextPrefix;
@@ -314,8 +312,6 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
                         _injectAutoSelect(controller);
                       }
                     },
-                    onConsoleMessage: (controller, consoleMessage) => debugPrint('BushaPay JS [${consoleMessage.messageLevel}]: ${consoleMessage.message}'),
-                    onReceivedError: (controller, request, error) => debugPrint('BushaPay: WebView error: ${error.description} (url=${request.url})'),
                   ),
                 if (!_checkoutInitialized)
                   Container(

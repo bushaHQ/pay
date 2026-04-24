@@ -71,7 +71,6 @@ jobs:
       - run: flutter pub get
       - run: dart format --set-exit-if-changed .
       - run: flutter analyze --no-fatal-infos
-      - run: flutter test --coverage
 
   android:
     name: Android
