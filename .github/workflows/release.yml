@@ -198,35 +198,16 @@ jobs:
           commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
           file_pattern: react-native/package.json
 
-      - name: Package zip
-        working-directory: ${{ github.workspace }}
+      - name: Pack library
         run: |
-          mkdir -p release
-          rsync -a \
-            --exclude='.dart_tool' \
-            --exclude='.flutter-plugins-dependencies' \
-            --exclude='build' \
-            --exclude='.idea' \
-            --exclude='.vscode' \
-            --exclude='*.iml' \
-            --exclude='node_modules' \
-            --exclude='.DS_Store' \
-            --exclude='.turbo' \
-            --exclude='.yarn/cache' \
-            --exclude='.yarn/install-state.gz' \
-            --exclude='.yarn/unplugged' \
-            --exclude='coverage' \
-            --exclude='example/ios' \
-            --exclude='example/android' \
-            --exclude='example/.expo' \
-            react-native/ release/busha_pay_react_native/
-          (cd release && zip -rq "busha_pay_react_native-${{ needs.version.outputs.version }}.zip" busha_pay_react_native)
+          mkdir -p "${{ github.workspace }}/release"
+          yarn pack --out "${{ github.workspace }}/release/busha_pay_react_native-${{ needs.version.outputs.version }}.tgz"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7.0.1
         with:
           name: busha_pay_react_native
-          path: release/busha_pay_react_native-${{ needs.version.outputs.version }}.zip
+          path: release/busha_pay_react_native-${{ needs.version.outputs.version }}.tgz
           if-no-files-found: error
 
   package:
@@ -259,7 +240,7 @@ jobs:
         with:
           tag: ${{ needs.version.outputs.tag }}
           generateReleaseNotes: true
-          artifacts: release/*.zip
+          artifacts: release/*.zip,release/*.tgz
 
   update-changelog:
     name: Update CHANGELOG
