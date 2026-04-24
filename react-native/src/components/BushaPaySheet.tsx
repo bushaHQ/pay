@@ -71,6 +71,11 @@ export const BushaPaySheet = ({
   const callbackUrl = useMemo(() => BushaPay.callbackUrl, []);
   const publicKey = useMemo(() => BushaPay.publicKey, []);
 
+  const webViewSource = useMemo(
+    () => ({ html: CHECKOUT_HTML, baseUrl: checkoutUrl }),
+    [checkoutUrl]
+  );
+
   useEffect(() => {
     if (!visible) return;
     registerCallbackHandler((url) => {
@@ -147,7 +152,7 @@ export const BushaPaySheet = ({
     return false;
   };
 
-  const handleLoadEnd = (): void => {
+  const handleLoadEnd: NonNullable<WebViewProps['onLoadEnd']> = () => {
     if (!formSubmittedRef.current) {
       formSubmittedRef.current = true;
       submitCheckoutForm();
@@ -182,7 +187,7 @@ export const BushaPaySheet = ({
         <View style={styles.webviewContainer}>
           <WebView
             ref={webViewRef}
-            source={{ html: CHECKOUT_HTML, baseUrl: checkoutUrl }}
+            source={webViewSource}
             originWhitelist={['*']}
             injectedJavaScriptBeforeContentLoaded={DOCUMENT_START_SCRIPTS}
             injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}

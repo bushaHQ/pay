@@ -31,9 +31,6 @@ const MESSAGE_LISTENER = `
 })();
 `;
 
-// iOS WKWebView implements navigator.getInstalledRelatedApps but returns an
-// empty array, which makes pug-pay's "Pay with Busha app" tile silently
-// no-op. Deleting it forces pug-pay to fall through to the deep-link path.
 const DEEP_LINK_ENABLER = `
 (function() {
   try {
@@ -46,10 +43,41 @@ const DEEP_LINK_ENABLER = `
 })();
 `;
 
+const INIT_CHECKOUT_FN = `
+(function() {
+  if (window.__bushaPayInitCheckoutDefined) return;
+  window.__bushaPayInitCheckoutDefined = true;
+  window.initCheckout = function(config) {
+    var existing = document.getElementById('checkoutForm');
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
+    }
+    var form = document.createElement('form');
+    form.id = 'checkoutForm';
+    form.method = 'POST';
+    form.style.display = 'none';
+    form.action = config._checkoutUrl;
+    delete config._checkoutUrl;
+    for (var key in config) {
+      if (Object.prototype.hasOwnProperty.call(config, key)) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = config[key];
+        form.appendChild(input);
+      }
+    }
+    (document.body || document.documentElement).appendChild(form);
+    form.submit();
+  };
+})();
+`;
+
 export const DOCUMENT_START_SCRIPTS = [
   BRIDGE_SHIM,
   MESSAGE_LISTENER,
   DEEP_LINK_ENABLER,
+  INIT_CHECKOUT_FN,
 ].join('\n');
 
 export const initCheckoutScript = (configJson: string): string =>

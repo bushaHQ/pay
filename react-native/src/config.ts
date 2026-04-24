@@ -17,7 +17,6 @@ export const toFormFields = (
   config: BushaPayConfig,
   opts: { publicKey: string; callbackUrl: string; checkoutUrl: string }
 ): Record<string, string> => {
-  const parentOrigin = getOrigin(opts.checkoutUrl);
   const fields: Record<string, string> = {
     public_key: opts.publicKey,
     quote_amount: config.quoteAmount,
@@ -26,8 +25,9 @@ export const toFormFields = (
     source_currency: config.sourceCurrency,
     callback_url: opts.callbackUrl,
     displayMode: 'INLINE',
-    parentOrigin,
   };
+  const parentOrigin = getOrigin(opts.checkoutUrl);
+  if (parentOrigin) fields.parentOrigin = parentOrigin;
   if (config.reference) fields.reference = config.reference;
   if (config.metaName) fields['meta[name]'] = config.metaName;
   if (config.metaEmail) fields['meta[email]'] = config.metaEmail;

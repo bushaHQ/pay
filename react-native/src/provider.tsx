@@ -47,10 +47,8 @@ export const BushaPayProvider = ({
   environment,
   children,
 }: ProviderProps) => {
-  const initRef = useRef(false);
-  if (!initRef.current) {
+  if (!BushaPay.isInitialized) {
     BushaPay.init({ publicKey, environment });
-    initRef.current = true;
   }
 
   const [chooserConfig, setChooserConfig] = useState<BushaPayConfig | null>(
