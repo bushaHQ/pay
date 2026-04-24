@@ -7,9 +7,9 @@ Official Busha Pay SDKs — Flutter, Android, iOS, React Native. One repo, one f
 | SDK | Location | Status |
 |---|---|---|
 | Flutter | [`flutter/`](./flutter) | ✅ Shipping |
+| React Native | [`react-native/`](./react-native) | ✅ Shipping |
 | Android | [`android/`](./android) | 🔜 Placeholder |
 | iOS | [`ios/`](./ios) | 🔜 Placeholder |
-| React Native | [`react-native/`](./react-native) | 🔜 Placeholder |
 
 ## Repo layout
 
@@ -34,9 +34,9 @@ The shared HTML is platform-agnostic: it's just a hidden form + an `initCheckout
 Each SDK has its own README:
 
 - [Flutter SDK docs](./flutter/README.md)
+- [React Native SDK docs](./react-native/README.md)
 - [Android SDK docs](./android/README.md) (coming soon)
 - [iOS SDK docs](./ios/README.md) (coming soon)
-- [React Native SDK docs](./react-native/README.md) (coming soon)
 
 ## Contributing
 
