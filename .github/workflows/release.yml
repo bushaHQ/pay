@@ -124,13 +124,6 @@ jobs:
       - name: Build Flutter
         run: make build-flutter
 
-      - name: Commit version bump
-        uses: stefanzweifel/git-auto-commit-action@v7.1.0
-        with:
-          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
-          file_pattern: flutter/pubspec.yaml
-
       - name: Package zip
         run: |
           mkdir -p release
@@ -215,13 +208,6 @@ jobs:
           yarn install --immutable
           yarn prepare
 
-      - name: Commit version bump
-        uses: stefanzweifel/git-auto-commit-action@v7.1.0
-        with:
-          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
-          file_pattern: react-native/package.json
-
       - name: Pack library
         run: |
           mkdir -p "${{ github.workspace }}/release"
@@ -234,11 +220,13 @@ jobs:
           path: release/busha_pay_react_native-${{ needs.version.outputs.version }}.tgz
           if-no-files-found: error
 
-  package:
-    name: Create GitHub release
+  # Single commit for all manifest version bumps, ONLY after every build
+  # job that was asked to run has succeeded. This avoids the parallel-push
+  # race of per-job commits and guarantees no version bump lands on the
+  # branch for a release that didn't actually ship.
+  commit-bumps:
+    name: Commit version bumps
     needs: [version, build-flutter, build-android, build-ios, build-react-native]
-    # Run when the version job succeeded and no build job failed. Skipped
-    # builds (because of `if:` not matching the selected sdk) are OK.
     if: |
       always() &&
       needs.version.result == 'success' &&
@@ -246,6 +234,44 @@ jobs:
       needs.build-android.result != 'failure' && needs.build-android.result != 'cancelled' &&
       needs.build-ios.result != 'failure' && needs.build-ios.result != 'cancelled' &&
       needs.build-react-native.result != 'failure' && needs.build-react-native.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Bump flutter/pubspec.yaml
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        run: |
+          sed -i "s/^version: .*/version: ${{ needs.version.outputs.version }}/" flutter/pubspec.yaml
+          grep '^version:' flutter/pubspec.yaml
+
+      - name: Bump react-native/package.json
+        if: inputs.sdk == 'react-native' || inputs.sdk == 'all'
+        working-directory: react-native
+        run: |
+          npm pkg set version=${{ needs.version.outputs.version }}
+          grep '"version"' package.json | head -1
+
+      - name: Commit version bumps
+        uses: stefanzweifel/git-auto-commit-action@v7.1.0
+        with:
+          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
+          file_pattern: |
+            flutter/pubspec.yaml
+            react-native/package.json
+
+  package:
+    name: Create GitHub release
+    needs: [version, commit-bumps]
+    if: |
+      always() &&
+      needs.version.result == 'success' &&
+      needs.commit-bumps.result == 'success'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ needs.version.outputs.tag }}
