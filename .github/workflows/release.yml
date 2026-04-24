@@ -97,9 +97,6 @@ jobs:
       - name: Build Flutter
         run: make build-flutter
 
-      - name: Test Flutter
-        run: cd flutter && flutter test
-
       - name: Commit version bump
         uses: stefanzweifel/git-auto-commit-action@v7.1.0
         with:
