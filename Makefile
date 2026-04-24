@@ -21,7 +21,7 @@ build-ios: sync
 	cd ios && swift build
 
 build-rn: sync
-	cd react-native && npm ci && npm run build
+	cd react-native && yarn install --immutable && yarn prepare && yarn typecheck && yarn lint
 
 # Publish
 .PHONY: publish-flutter publish-android publish-ios publish-rn
@@ -36,7 +36,7 @@ publish-ios:
 	@echo "Tag and push — SPM picks it up from the Git tag"
 
 publish-rn: build-rn
-	cd react-native && npm publish
+	cd react-native && yarn npm publish --access public
 
 .PHONY: build-all publish-all clean
 build-all: build-flutter build-android build-ios build-rn
@@ -46,4 +46,4 @@ clean:
 	cd flutter && flutter clean || true
 	cd android && ./gradlew clean || true
 	cd ios && swift package clean || true
-	cd react-native && rm -rf node_modules dist || true
+	cd react-native && rm -rf node_modules example/node_modules lib || true

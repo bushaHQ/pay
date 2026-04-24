@@ -96,6 +96,25 @@ jobs:
     needs: changes
     if: needs.changes.outputs.react-native == 'true'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-native
     steps:
       - uses: actions/checkout@v4
-      - run: echo "React Native SDK not yet implemented — skipping."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: react-native/.nvmrc
+          cache: yarn
+          cache-dependency-path: react-native/yarn.lock
+
+      - name: Sync shared HTML
+        working-directory: .
+        run: make sync
+
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn typecheck
+      - run: yarn lint
+      - run: yarn test
+      - run: yarn prepare
