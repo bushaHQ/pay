@@ -1553,6 +1553,7 @@ __metadata:
   dependencies:
     "@expo/metro-runtime": "npm:~55.0.10"
     expo: "npm:~55.0.17"
+    expo-application: "npm:~7.0.0"
     expo-status-bar: "npm:~55.0.5"
     react: "npm:19.2.0"
     react-dom: "npm:19.2.0"
@@ -1560,6 +1561,7 @@ __metadata:
     react-native-builder-bob: "npm:^0.41.0"
     react-native-monorepo-config: "npm:^0.3.3"
     react-native-web: "npm:~0.21.0"
+    react-native-webview: "npm:13.16.0"
   languageName: unknown
   linkType: soft
 
@@ -1581,17 +1583,21 @@ __metadata:
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-ft-flow: "npm:^3.0.11"
     eslint-plugin-prettier: "npm:^5.5.5"
+    expo-application: "npm:~7.0.0"
     jest: "npm:^30.3.0"
     prettier: "npm:^3.8.1"
     react: "npm:19.2.0"
     react-native: "npm:0.83.6"
     react-native-builder-bob: "npm:^0.41.0"
+    react-native-webview: "npm:13.16.0"
     release-it: "npm:^19.2.4"
     turbo: "npm:^2.8.21"
     typescript: "npm:^6.0.2"
   peerDependencies:
+    expo-application: ">=6.0.0"
     react: "*"
     react-native: "*"
+    react-native-webview: ">=13.0.0"
   languageName: unknown
   linkType: soft
 
@@ -6442,6 +6448,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-application@npm:~7.0.0":
+  version: 7.0.8
+  resolution: "expo-application@npm:7.0.8"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/3926cb3e0be1ea82ee991cab55c0b7baf40a5b4ec5812857fc4c8fe1cb63b9dc5e94b2a7030b0cb1d6288d2a4877459f775118075d72b868fd19b57b5b789981
+  languageName: node
+  linkType: hard
+
 "expo-asset@npm:~55.0.16":
   version: 55.0.16
   resolution: "expo-asset@npm:55.0.16"
@@ -7560,7 +7575,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"invariant@npm:^2.2.4":
+"invariant@npm:2.2.4, invariant@npm:^2.2.4":
   version: 2.2.4
   resolution: "invariant@npm:2.2.4"
   dependencies:
@@ -10690,6 +10705,19 @@ __metadata:
     react: ^18.0.0 || ^19.0.0
     react-dom: ^18.0.0 || ^19.0.0
   checksum: 10c0/8c184fef0045c25deff765c8e80963454a5dffd8e389a9e11cf2fec9e769ff0f82c3d56d082b1897a7ded8374d9ae8a49dac7f09377a104f1995a5ddea645095
+  languageName: node
+  linkType: hard
+
+"react-native-webview@npm:13.16.0":
+  version: 13.16.0
+  resolution: "react-native-webview@npm:13.16.0"
+  dependencies:
+    escape-string-regexp: "npm:^4.0.0"
+    invariant: "npm:2.2.4"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/813c3cb176effd65f8d9b45eb00732ac87bfab2d0b1c4016f0d43e95f9a287e495913540ebe4f47da868c804f6fdcb2246a2156d6e31712bd426b43bcecc8e7f
   languageName: node
   linkType: hard
 
