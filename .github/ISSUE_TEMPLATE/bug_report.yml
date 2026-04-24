@@ -1,0 +1,87 @@
+name: 🐛 Bug report
+description: Report a reproducible bug in a Busha Pay SDK.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Bug report
+
+        Thanks for taking the time to file a report. To help us fix the issue quickly, please fill the form below accurately.
+
+        **Your issue may be closed if it doesn't provide enough information to reproduce the bug.**
+
+  - type: dropdown
+    id: sdk
+    attributes:
+      label: Which SDK is affected?
+      options:
+        - Flutter
+        - React Native
+        - Android (coming soon)
+        - iOS (coming soon)
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: Before submitting a new issue
+      description: Please perform these checks first.
+      options:
+        - label: I'm on the latest release of the SDK (or a reasonably recent one).
+          required: true
+        - label: I checked existing open and closed issues for duplicates.
+          required: true
+        - label: I can reproduce the bug on a clean setup (fresh clone or new project).
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Bug summary
+      description: What is the bug? Include error messages, stack traces, screenshots, or a short screen recording if helpful.
+    validations:
+      required: true
+
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK version
+      description: Which version of the SDK are you using?
+      placeholder: "e.g. 0.0.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment info
+      description: |
+        Paste the relevant output for the SDK you selected above.
+
+        - **Flutter** → `flutter doctor -v` output + target platform (iOS / Android).
+        - **React Native** → `npx react-native info` output + Expo SDK version (if using Expo).
+        - **Android** → Android Studio / Gradle / Kotlin / minSdk / targetSdk versions.
+        - **iOS** → Xcode / Swift / iOS deployment target versions.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: A numbered list of exact steps (with code snippets where relevant) to reproduce the bug.
+      value: |
+        1. …
+        2. …
+    validations:
+      required: true
+
+  - type: input
+    id: reproducible-example
+    attributes:
+      label: Reproducible example (optional but strongly encouraged)
+      description: Link to a minimal repository that reproduces the bug. A clean repro dramatically speeds up the fix.
+    validations:
+      required: false
