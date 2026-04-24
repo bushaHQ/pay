@@ -19,7 +19,7 @@ sealed class BushaPayResult {
 ///
 /// Full payment data (amounts, rates, timeline) is available when payment
 /// was completed in the web checkout flow. When completed via the Busha app,
-/// only [paymentId], [checkoutId], and [status] are available.
+/// only [paymentId] and [status] are available.
 ///
 /// Use [hasFullData] to check which fields are populated.
 ///
@@ -29,13 +29,10 @@ class BushaPaySuccess extends BushaPayResult {
   /// Payment request ID (e.g., 'PAYR_EhDmpnPwDSjO'). Always present.
   final String paymentId;
 
-  /// Checkout ID. Always present.
-  final String checkoutId;
-
   /// Payment status (e.g., 'completed'). Always present.
   final String status;
 
-  // --- Full data (web checkout flow only) ---
+  // Full data (web checkout flow only)
 
   /// Amount paid in source currency (e.g., '0.00017798').
   final String? sourceAmount;
@@ -69,7 +66,6 @@ class BushaPaySuccess extends BushaPayResult {
 
   const BushaPaySuccess({
     required this.paymentId,
-    required this.checkoutId,
     required this.status,
     this.sourceAmount,
     this.sourceCurrency,
@@ -90,8 +86,8 @@ class BushaPaySuccess extends BushaPayResult {
   bool get hasFullData => rawData != null;
 
   /// Creates a success result from a callback deep link (Path B — limited data).
-  factory BushaPaySuccess.fromCallback({required String paymentId, required String checkoutId}) =>
-      BushaPaySuccess(paymentId: paymentId, checkoutId: checkoutId, status: 'completed');
+  factory BushaPaySuccess.fromCallback({required String paymentId}) =>
+      BushaPaySuccess(paymentId: paymentId, status: 'completed');
 
   /// Creates a success result from commerce-js onSuccess data (Path A — full data).
   factory BushaPaySuccess.fromCommerceJs(Map<String, dynamic> payload) {
@@ -99,7 +95,6 @@ class BushaPaySuccess extends BushaPayResult {
 
     return BushaPaySuccess(
       paymentId: data['id'] as String? ?? data['reference'] as String? ?? '',
-      checkoutId: '',
       status: data['status'] as String? ?? 'completed',
       sourceAmount: data['source_amount'] as String?,
       sourceCurrency: data['source_currency'] as String?,
