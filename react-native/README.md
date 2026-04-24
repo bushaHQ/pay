@@ -315,16 +315,33 @@ const linking = {
 
 ```ts
 type BushaPayResult =
-  | { type: 'success'; paymentId: string; checkoutId: string; status: string; rawData?: Record<string, unknown> }
+  | {
+      type: 'success';
+      paymentId: string;
+      checkoutId: string;
+      status: string;
+      hasFullData: boolean;
+      // Populated only when `hasFullData === true` (web checkout path):
+      sourceAmount?: string;
+      sourceCurrency?: string;
+      targetAmount?: string;
+      targetCurrency?: string;
+      requestedAmount?: string;
+      currency?: string;
+      rate?: Record<string, unknown>;
+      merchantInfo?: Record<string, unknown>;
+      timeline?: Record<string, unknown>;
+      rawData?: Record<string, unknown>;
+    }
   | { type: 'cancelled' }
   | { type: 'error'; message: string; code?: string };
 ```
 
 ### Full vs Limited Data
 
-When payment completes via the **web checkout**, the success result includes `rawData` — the full pug-pay response with amounts, currencies, exchange rate, timeline, etc.
+When payment completes via the **web checkout**, `BushaPaySuccess` includes full data: amounts, currencies, exchange rate, timeline, etc.
 
-When payment completes via the **Busha app**, only `paymentId`, `checkoutId`, and `status` are available. Check `result.rawData != null` if you need to branch on this.
+When payment completes via the **Busha app**, only `paymentId`, `checkoutId`, and `status` are available. Use `result.hasFullData` to check.
 
 **Always verify the payment server-side via webhooks.** The client result is a UX hint, not the source of truth.
 
