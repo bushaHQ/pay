@@ -10,6 +10,22 @@ npm install @busha/pay-react-native react-native-webview expo-application
 yarn add @busha/pay-react-native react-native-webview expo-application
 ```
 
+### Installing from GitHub
+
+Each release ships an npm-installable tarball on [github.com/bushaHQ/pay/releases](https://github.com/bushaHQ/pay/releases) under tags shaped `react-native/v<version>`. You can install it directly from the release URL without going through the npm registry:
+
+```sh
+npm install https://github.com/bushaHQ/pay/releases/download/react-native/v0.0.1/busha_pay_react_native-0.0.1.tgz
+# or with yarn:
+yarn add https://github.com/bushaHQ/pay/releases/download/react-native/v0.0.1/busha_pay_react_native-0.0.1.tgz
+```
+
+Replace `v0.0.1` with the version you want. The peer deps (`react-native-webview`, `expo-application`) still need to be installed separately:
+
+```sh
+npm install react-native-webview expo-application
+```
+
 ### Bare React Native — one-time setup
 
 If your app is bare React Native and you haven't adopted Expo modules yet,
@@ -309,7 +325,7 @@ const linking = {
 
 | `type` | Description |
 |---|---|
-| `'success'` | Payment completed. Contains `paymentId`, `checkoutId`, and `status`, plus optional full data. |
+| `'success'` | Payment completed. Contains `paymentId` and `status`, plus optional full data. |
 | `'cancelled'` | User dismissed the checkout or backed out. |
 | `'error'` | Something went wrong. Contains `message` and optional `code`. |
 
@@ -318,7 +334,6 @@ type BushaPayResult =
   | {
       type: 'success';
       paymentId: string;
-      checkoutId: string;
       status: string;
       hasFullData: boolean;
       // Populated only when `hasFullData === true` (web checkout path):
@@ -341,7 +356,7 @@ type BushaPayResult =
 
 When payment completes via the **web checkout**, `BushaPaySuccess` includes full data: amounts, currencies, exchange rate, timeline, etc.
 
-When payment completes via the **Busha app**, only `paymentId`, `checkoutId`, and `status` are available. Use `result.hasFullData` to check.
+When payment completes via the **Busha app**, only `paymentId` and `status` are available. Use `result.hasFullData` to check.
 
 **Always verify the payment server-side via webhooks.** The client result is a UX hint, not the source of truth.
 

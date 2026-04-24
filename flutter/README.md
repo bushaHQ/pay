@@ -9,6 +9,21 @@ dependencies:
   busha_pay: ^0.0.1
 ```
 
+### Installing from GitHub
+
+The SDK is released as a zipped artifact on [github.com/bushaHQ/pay/releases](https://github.com/bushaHQ/pay/releases) under tags shaped `flutter/v<version>`. To consume a release directly from the monorepo without going through pub.dev, point your `pubspec.yaml` at the tag and the `flutter/` subfolder:
+
+```yaml
+dependencies:
+  busha_pay:
+    git:
+      url: https://github.com/bushaHQ/pay
+      ref: flutter/v0.0.1
+      path: flutter
+```
+
+Replace `v0.0.1` with the version you want. Every git checkout re-resolves from the tagged commit, so your lockfile stays reproducible.
+
 ## Quick Start
 
 ### 1. Initialize the SDK
@@ -255,7 +270,7 @@ Keep `FlutterDeepLinkingEnabled = false` / `flutter_deeplinking_enabled = "false
 
 | Type | Description |
 |------|-------------|
-| `BushaPaySuccess` | Payment completed. Contains `paymentId`, `checkoutId`, and optionally full payment data. |
+| `BushaPaySuccess` | Payment completed. Contains `paymentId` and `status`, plus optional full payment data. |
 | `BushaPayCancelled` | User dismissed the checkout or backed out. |
 | `BushaPayError` | Something went wrong. Contains `message` and optional `code`. |
 
@@ -263,7 +278,7 @@ Keep `FlutterDeepLinkingEnabled = false` / `flutter_deeplinking_enabled = "false
 
 When payment completes via the **web checkout**, `BushaPaySuccess` includes full data: amounts, currencies, exchange rate, timeline, etc.
 
-When payment completes via the **Busha app**, only `paymentId`, `checkoutId`, and `status` are available. Use `result.hasFullData` to check.
+When payment completes via the **Busha app**, only `paymentId` and `status` are available. Use `result.hasFullData` to check.
 
 **Always verify the payment server-side via webhooks.** The client result is a UX hint, not the source of truth.
 
