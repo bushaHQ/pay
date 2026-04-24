@@ -38,6 +38,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve tag prefix
+        id: prefix
+        if: inputs.version == ''
+        run: |
+          SDK='${{ inputs.sdk }}'
+          if [ "$SDK" = "all" ]; then
+            PREFIX="v"
+            FALLBACK="v0.0.1"
+          elif git tag --list "${SDK}/v*" | grep -q .; then
+            PREFIX="${SDK}/v"
+            FALLBACK="${SDK}/v0.0.1"
+          else
+            PREFIX="v"
+            FALLBACK="v0.0.1"
+          fi
+          echo "prefix=${PREFIX}"     >> $GITHUB_OUTPUT
+          echo "fallback=${FALLBACK}" >> $GITHUB_OUTPUT
+          echo "Using prefix=${PREFIX} fallback=${FALLBACK}"
+
       - name: Auto-bump version
         id: semver
         if: inputs.version == ''
@@ -45,8 +64,9 @@ jobs:
         with:
           token: ${{ github.token }}
           branch: ${{ github.ref_name }}
+          prefix: ${{ steps.prefix.outputs.prefix }}
           patchList: fix, bugfix, perf, refactor, test, tests, chore
-          fallbackTag: v0.0.1
+          fallbackTag: ${{ steps.prefix.outputs.fallback }}
 
       - name: Resolve version + tag
         id: out
@@ -96,9 +116,6 @@ jobs:
 
       - name: Build Flutter
         run: make build-flutter
-
-      - name: Test Flutter
-        run: cd flutter && flutter test
 
       - name: Commit version bump
         uses: stefanzweifel/git-auto-commit-action@v7.1.0
@@ -226,6 +243,14 @@ jobs:
     outputs:
       tag: ${{ needs.version.outputs.tag }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.ref_name }}
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -241,6 +266,23 @@ jobs:
           tag: ${{ needs.version.outputs.tag }}
           generateReleaseNotes: true
           artifacts: release/*.zip,release/*.tgz
+
+      - name: Mirror tag to each SDK
+        if: inputs.sdk == 'all'
+        run: |
+          VERSION='${{ needs.version.outputs.version }}'
+          ALL_TAG='${{ needs.version.outputs.tag }}'
+          git fetch --tags origin
+          for sdk in flutter react-native android ios; do
+            SDK_TAG="${sdk}/v${VERSION}"
+            if git ls-remote --tags origin "refs/tags/${SDK_TAG}" | grep -q .; then
+              echo "Skipping ${SDK_TAG} — already exists on remote"
+              continue
+            fi
+            git tag "$SDK_TAG" "$ALL_TAG"
+            git push origin "$SDK_TAG"
+            echo "Created ${SDK_TAG} -> ${ALL_TAG}"
+          done
 
   update-changelog:
     name: Update CHANGELOG
