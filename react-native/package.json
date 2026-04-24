@@ -1,6 +1,6 @@
 {
   "name": "@busha/pay-react-native",
-  "version": "0.0.1",
+  "version": "v1.0.0",
   "description": "Official Busha Pay SDK for React Native",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
