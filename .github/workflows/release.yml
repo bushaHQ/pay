@@ -76,6 +76,13 @@ jobs:
           else
             VERSION="${{ steps.semver.outputs.nextStrict }}"
           fi
+
+          VERSION="${VERSION#v}"
+          # Sanity check: must be a valid SemVer-ish string.
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+].+)?$'; then
+            echo "::error::Resolved version '${VERSION}' is not a valid SemVer"
+            exit 1
+          fi
           if [ "${{ inputs.sdk }}" = "all" ]; then
             TAG="v${VERSION}"
           else
