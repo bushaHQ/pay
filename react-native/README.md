@@ -1,4 +1,4 @@
-# @busha/pay-react-native
+# Busha Pay React Native SDK
 
 Official React Native SDK for accepting crypto payments via Busha.
 
@@ -10,26 +10,25 @@ npm install @busha/pay-react-native react-native-webview expo-application
 yarn add @busha/pay-react-native react-native-webview expo-application
 ```
 
-### Bare React Native (no Expo) — one-time setup
+### Bare React Native — one-time setup
 
 If your app is bare React Native and you haven't adopted Expo modules yet,
-run this once to enable `expo-application` and any future Expo-module peer
-dependencies:
+run this once to enable `expo-application` and any other `expo-*` peer
+dependency:
 
 ```sh
 npx install-expo-modules@latest
 ```
-
-This sets up the Expo modules infrastructure in your native iOS/Android
-projects. It is a one-time change; after this step the SDK — and any
-`expo-*` package — works like any other React Native library.
 
 Expo managed, Expo dev client, and Expo Go users already have this and
 need no extra setup.
 
 ## Quick Start
 
-### 1. Wrap your app with `BushaPayProvider`
+### 1. Initialize the SDK
+
+Wrap your app with `BushaPayProvider`. The provider calls `BushaPay.init()`
+on mount and auto-detects your app's bundle ID.
 
 ```tsx
 import { BushaPayProvider } from '@busha/pay-react-native';
@@ -37,21 +36,21 @@ import { BushaPayProvider } from '@busha/pay-react-native';
 export default function App() {
   return (
     <BushaPayProvider publicKey="pub_xxx" environment="sandbox">
-      {/* your app */}
+      <Home />
     </BushaPayProvider>
   );
 }
 ```
 
-The provider reads your bundle ID automatically via `expo-application`
-and derives the callback URL scheme from it (`<bundle_id>.busha-pay`).
+Use `environment="live"` for production.
 
-### 2. Launch checkout
+### 2. Launch Checkout
 
 ```tsx
+import { Button } from 'react-native';
 import { useBushaPay } from '@busha/pay-react-native';
 
-function CheckoutButton() {
+function PayButton() {
   const { checkout } = useBushaPay();
 
   const onPress = async () => {
@@ -60,20 +59,19 @@ function CheckoutButton() {
       quoteCurrency: 'NGN',
       targetCurrency: 'NGN',
       sourceCurrency: 'USDT',
-      metaName: 'Jane Doe',
-      metaEmail: 'jane@example.com',
+      metaName: 'John Doe',
+      metaEmail: 'john@example.com',
     });
 
     switch (result.type) {
       case 'success':
-        // Verify via webhook server-side before fulfilling the order.
         console.log('Payment completed:', result.paymentId);
         break;
       case 'cancelled':
         console.log('User cancelled');
         break;
       case 'error':
-        console.log('Error:', result.message, result.code);
+        console.log('Error:', result.message);
         break;
     }
   };
@@ -82,44 +80,16 @@ function CheckoutButton() {
 }
 ```
 
-### 3. Forward deep links to the SDK
-
-The Busha app (and the web checkout's "I've paid" button) returns the
-user to your app via a custom URL scheme. Your app owns URL delivery —
-the SDK does not subscribe to `Linking` itself. Forward matching URLs to
-`BushaPay.handleDeepLink`:
-
-```tsx
-import { useEffect } from 'react';
-import { Linking } from 'react-native';
-import { BushaPay } from '@busha/pay-react-native';
-
-useEffect(() => {
-  const sub = Linking.addEventListener('url', ({ url }) => {
-    BushaPay.handleDeepLink(url);
-  });
-  Linking.getInitialURL().then((url) => {
-    if (url) BushaPay.handleDeepLink(url);
-  });
-  return () => sub.remove();
-}, []);
-```
-
-`BushaPay.handleDeepLink(url)` returns `true` if the URL was a Busha
-callback and was consumed.
-
 ## Platform Setup
 
 Both platforms need two things:
 
-1. **Register your app's callback URL scheme** (`<bundle_id>.busha-pay`) so
-   the Busha app can return the result to you.
-2. **Declare the Busha app's URL scheme as launchable** so the SDK can
-   deep-link into the installed Busha mobile app.
+1. **Register your app's callback URL scheme** so the Busha app can return the payment result to you (scheme is `<your.bundle.id>.busha-pay`).
+2. **Declare the Busha app's URL scheme as launchable** so the SDK can deep-link into the Busha mobile app when it's installed.
 
 ### Expo (managed or prebuild)
 
-In your `app.json`, set the callback scheme and the iOS allow-list:
+In `app.json`:
 
 ```json
 {
@@ -175,7 +145,9 @@ npx expo install expo-build-properties
 
 ### Bare React Native
 
-#### iOS — `ios/YourApp/Info.plist`
+#### iOS
+
+Add the following to `ios/YourApp/Info.plist`:
 
 ```xml
 <!-- 1. Register your app's callback URL scheme -->
@@ -196,12 +168,14 @@ npx expo install expo-build-properties
 <array>
     <!-- Production Busha app -->
     <string>co.busha.apple</string>
-    <!-- Sandbox/staging Busha app (only if using environment="sandbox") -->
+    <!-- Sandbox/staging Busha app (only needed if you use environment="sandbox") -->
     <string>co.busha.boro.development</string>
 </array>
 ```
 
-#### Android — `android/app/src/main/AndroidManifest.xml`
+#### Android
+
+Add the callback `<intent-filter>` to the main `<activity>` in `android/app/src/main/AndroidManifest.xml`:
 
 ```xml
 <activity
@@ -219,10 +193,11 @@ npx expo install expo-build-properties
 </activity>
 ```
 
-Also add the Busha app package visibility to the root `<manifest>` element (required on Android 11+):
+Also add the Busha app package visibility to the manifest's root `<manifest>` element (required on Android 11+):
 
 ```xml
 <manifest ...>
+    <!-- 2. Allow the SDK to launch the Busha app -->
     <queries>
         <package android:name="co.busha.android" />
         <!-- Sandbox/staging only -->
@@ -234,9 +209,9 @@ Also add the Busha app package visibility to the root `<manifest>` element (requ
 
 ### Testing the callback
 
-Simulate a Busha callback to verify your setup:
+You can simulate a callback from the Busha app to verify your setup:
 
-```sh
+```bash
 # iOS simulator
 xcrun simctl openurl booted "com.example.myapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_test"
 
@@ -245,13 +220,98 @@ adb shell am start -a android.intent.action.VIEW \
   -d "com.example.myapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_test"
 ```
 
-Replace `com.example.myapp` with your actual bundle ID. If everything is
-wired up, your app comes to the foreground and `checkout()` resolves with
-a success result.
+Replace `com.example.myapp` with your actual package name / bundle identifier. If set up correctly, your app will come to the foreground and `checkout()` will resolve with a success result.
+
+## Forwarding the Callback to the SDK
+
+The SDK does **not** subscribe to incoming URLs itself — that avoids conflicts with whatever deep-link mechanism your app already uses (React Native `Linking`, `expo-linking`, React Navigation's `linking` config, etc.). You wire up URL delivery in your own app and forward Busha callbacks with a single call:
+
+```ts
+BushaPay.handleDeepLink(url); // returns true if the URL was a Busha callback
+```
+
+### Wiring options
+
+Pick whichever matches the deep-link approach your app already uses. Each one ends with a call to `BushaPay.handleDeepLink(url)` and returns `true` if the URL was a Busha callback.
+
+#### Option A — Built-in `Linking` (vanilla React Native)
+
+```tsx
+import { useEffect } from 'react';
+import { Linking } from 'react-native';
+import { BushaPay } from '@busha/pay-react-native';
+
+useEffect(() => {
+  const sub = Linking.addEventListener('url', ({ url }) => {
+    BushaPay.handleDeepLink(url);
+  });
+  Linking.getInitialURL().then((url) => {
+    if (url) BushaPay.handleDeepLink(url);
+  });
+  return () => sub.remove();
+}, []);
+```
+
+#### Option B — `expo-linking`
+
+```tsx
+import { useEffect } from 'react';
+import * as Linking from 'expo-linking';
+import { BushaPay } from '@busha/pay-react-native';
+
+useEffect(() => {
+  const sub = Linking.addEventListener('url', ({ url }) => {
+    BushaPay.handleDeepLink(url);
+  });
+  Linking.getInitialURL().then((url) => {
+    if (url) BushaPay.handleDeepLink(url);
+  });
+  return () => sub.remove();
+}, []);
+```
+
+#### Option C — React Navigation (`linking` config)
+
+If your app uses `@react-navigation/native`'s deep-link handling, hook in via a `subscribe` function that forwards the URL to the SDK first, then falls through to navigation:
+
+```tsx
+import { NavigationContainer } from '@react-navigation/native';
+import { Linking } from 'react-native';
+import { BushaPay } from '@busha/pay-react-native';
+
+const linking = {
+  prefixes: ['com.example.myapp.busha-pay://', 'https://yourapp.com'],
+  config: { /* your screens */ },
+  subscribe(listener) {
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (BushaPay.handleDeepLink(url)) return; // consumed by the SDK
+      listener(url);
+    });
+    return () => sub.remove();
+  },
+};
+
+<NavigationContainer linking={linking}>
+  {/* ... */}
+</NavigationContainer>
+```
+
+## How It Works
+
+1. The SDK opens a chooser with two options: **Pay with Busha app** or **Pay with stablecoins**.
+2. **Busha app** — if the app is installed, the SDK deep-links into it. If it isn't, it falls back to the web checkout.
+3. **Stablecoins** — opens the web checkout in an in-app WebView.
+4. Either way, the result is delivered to the promise returned by `checkout()`.
 
 ## Result Types
 
-`checkout()` resolves with a discriminated union:
+`checkout()` resolves with a discriminated union. Narrow by `result.type`:
+
+| `type` | Description |
+|---|---|
+| `'success'` | Payment completed. Contains `paymentId`, `checkoutId`, and `status`, plus optional full data. |
+| `'cancelled'` | User dismissed the checkout or backed out. |
+| `'error'` | Something went wrong. Contains `message` and optional `code`. |
 
 ```ts
 type BushaPayResult =
@@ -260,34 +320,32 @@ type BushaPayResult =
   | { type: 'error'; message: string; code?: string };
 ```
 
-| `type` | Description |
-|---|---|
-| `'success'` | Payment completed. Contains `paymentId`, `checkoutId`, and `status`. Web-checkout flows also populate `rawData` with the full pug-pay response. |
-| `'cancelled'` | User dismissed the checkout or backed out of the Busha app. |
-| `'error'` | Something went wrong. Contains `message` and optional `code`. |
+### Full vs Limited Data
+
+When payment completes via the **web checkout**, the success result includes `rawData` — the full pug-pay response with amounts, currencies, exchange rate, timeline, etc.
+
+When payment completes via the **Busha app**, only `paymentId`, `checkoutId`, and `status` are available. Check `result.rawData != null` if you need to branch on this.
 
 **Always verify the payment server-side via webhooks.** The client result is a UX hint, not the source of truth.
 
 ## Configuration
 
-Fields on `BushaPayConfig` (the argument to `checkout()`):
-
-| Field | Type | Required | Description |
+| Parameter | Type | Required | Description |
 |---|---|---|---|
-| `quoteAmount` | `string` | yes | Amount to charge (e.g., `'10000'`) |
-| `quoteCurrency` | `string` | yes | Currency for the amount (e.g., `'NGN'`) |
-| `targetCurrency` | `string` | yes | Settlement currency |
-| `sourceCurrency` | `string` | yes | Crypto asset the user pays with (e.g., `'USDT'`) |
-| `reference` | `string` | no | Custom transaction reference |
-| `metaName` | `string` | no | Customer name |
-| `metaEmail` | `string` | no | Customer email |
-| `metaPhone` | `string` | no | Customer phone |
-| `source` | `string` | no | Source label (defaults to `'payment-link'` on the checkout side) |
-| `sourceId` | `string` | no | Optional correlation ID for your own records |
+| `quoteAmount` | `string` | Yes | Amount to charge (e.g., `'10000'`) |
+| `quoteCurrency` | `string` | Yes | Currency for the amount (e.g., `'NGN'`) |
+| `targetCurrency` | `string` | Yes | Settlement currency |
+| `sourceCurrency` | `string` | Yes | Crypto asset for payment (e.g., `'USDT'`) |
+| `reference` | `string?` | No | Custom transaction reference |
+| `metaName` | `string?` | No | Customer name |
+| `metaEmail` | `string?` | No | Customer email |
+| `metaPhone` | `string?` | No | Customer phone |
+| `source` | `string?` | No | Source label. Defaults to `'payment-link'`. |
+| `sourceId` | `string?` | No | Optional ID you use to correlate the payment with your own records. |
 
 ## Find Your Public Key
 
-1. Log in to the [Busha Business dashboard](https://dash.busha.io).
+1. Log in to your [Busha Business dashboard](https://dash.busha.io).
 2. Go to **Settings → Developer Tools**.
 3. Copy your **Public Key** (starts with `pub_`).
 
