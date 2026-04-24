@@ -32,3 +32,6 @@ ios/DerivedData/
 react-native/node_modules/
 react-native/dist/
 react-native/coverage/
+
+ARCHITECTURE.md
+.claude/
