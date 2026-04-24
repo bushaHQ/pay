@@ -1,7 +1,6 @@
 export type BushaPaySuccess = {
   type: 'success';
   paymentId: string;
-  checkoutId: string;
   status: string;
 
   // Full data — populated only when payment completed via the web checkout
@@ -35,13 +34,9 @@ export type BushaPayResult =
   | BushaPayError;
 
 /** Success result from a callback deep link (Busha-app path — limited data). */
-export const successFromCallback = (
-  paymentId: string,
-  checkoutId: string = ''
-): BushaPaySuccess => ({
+export const successFromCallback = (paymentId: string): BushaPaySuccess => ({
   type: 'success',
   paymentId,
-  checkoutId,
   status: 'completed',
   hasFullData: false,
 });
@@ -58,7 +53,6 @@ export const successFromCheckoutData = (
       (data.id as string | undefined) ??
       (data.reference as string | undefined) ??
       '',
-    checkoutId: '',
     status: (data.status as string | undefined) ?? 'completed',
     sourceAmount: data.source_amount as string | undefined,
     sourceCurrency: data.source_currency as string | undefined,
