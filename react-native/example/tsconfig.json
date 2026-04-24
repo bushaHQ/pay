@@ -1,6 +1,10 @@
 {
   "extends": "../tsconfig",
   "compilerOptions": {
-    // Avoid expo-cli auto-generating a tsconfig
+    // The parent tsconfig uses `react-native-strict-api` which narrows the
+    // public prop surface of RN components (used for library code). The
+    // example app is a consumer and needs the full prop surface of
+    // FlatList/ScrollView/etc., so reset the condition here.
+    "customConditions": []
   }
 }
