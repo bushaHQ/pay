@@ -26,17 +26,16 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Release ${{ inputs.sdk }}
+  version:
+    name: Resolve version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.out.outputs.version }}
+      tag: ${{ steps.out.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Auto-bump version
@@ -50,7 +49,7 @@ jobs:
           fallbackTag: v0.0.1
 
       - name: Resolve version + tag
-        id: version
+        id: out
         run: |
           if [ -n "${{ inputs.version }}" ]; then
             VERSION="${{ inputs.version }}"
@@ -67,111 +66,278 @@ jobs:
           echo "Resolved version: ${VERSION}"
           echo "Resolved tag:     ${TAG}"
 
-      - name: Sync shared assets
-        run: make sync
+  build-flutter:
+    name: Build Flutter
+    needs: version
+    if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - name: Setup Flutter
-        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.41.0
           cache: true
 
+      - name: Sync shared assets
+        run: make sync
+
       - name: Bump flutter/pubspec.yaml
-        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
         run: |
-          sed -i "s/^version: .*/version: ${{ steps.version.outputs.version }}/" flutter/pubspec.yaml
+          sed -i "s/^version: .*/version: ${{ needs.version.outputs.version }}/" flutter/pubspec.yaml
           grep '^version:' flutter/pubspec.yaml
 
       - name: Build Flutter
-        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
         run: make build-flutter
 
       - name: Test Flutter
-        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
         run: cd flutter && flutter test
 
-      - name: Build Android
-        if: inputs.sdk == 'android' || inputs.sdk == 'all'
-        run: echo "Android SDK not yet implemented — skipping build."
-
-      - name: Build iOS
-        if: inputs.sdk == 'ios' || inputs.sdk == 'all'
-        run: echo "iOS SDK not yet implemented — skipping build."
-
-      - name: Build React Native
-        if: inputs.sdk == 'react-native' || inputs.sdk == 'all'
-        run: echo "React Native SDK not yet implemented — skipping build."
-
       - name: Commit version bump
-        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@v7.1.0
         with:
           commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: 'build(release): ${{ steps.version.outputs.tag }} [skip ci]'
+          commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
           file_pattern: flutter/pubspec.yaml
 
-      - name: Package artifacts
+      - name: Package zip
         run: |
           mkdir -p release
-          pack() {
-            local name=$1 dir=$2
-            rsync -a \
-              --exclude='.dart_tool' \
-              --exclude='.flutter-plugins-dependencies' \
-              --exclude='build' \
-              --exclude='.idea' \
-              --exclude='.vscode' \
-              --exclude='*.iml' \
-              --exclude='node_modules' \
-              --exclude='.DS_Store' \
-              "$dir/" "release/${name}/"
-            (cd release && zip -rq "${name}-${{ steps.version.outputs.version }}.zip" "$name")
-          }
-          case "${{ inputs.sdk }}" in
-            flutter)       pack busha_pay_flutter flutter ;;
-            android)       pack busha_pay_android android ;;
-            ios)           pack busha_pay_ios ios ;;
-            react-native)  pack busha_pay_react_native react-native ;;
-            all)
-              pack busha_pay_flutter flutter
-              pack busha_pay_android android
-              pack busha_pay_ios ios
-              pack busha_pay_react_native react-native
-              ;;
-          esac
-          ls -la release/
+          rsync -a \
+            --exclude='.dart_tool' \
+            --exclude='.flutter-plugins-dependencies' \
+            --exclude='build' \
+            --exclude='.idea' \
+            --exclude='.vscode' \
+            --exclude='*.iml' \
+            --exclude='node_modules' \
+            --exclude='.DS_Store' \
+            flutter/ release/busha_pay_flutter/
+          (cd release && zip -rq "busha_pay_flutter-${{ needs.version.outputs.version }}.zip" busha_pay_flutter)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: busha_pay_flutter
+          path: release/busha_pay_flutter-${{ needs.version.outputs.version }}.zip
+          if-no-files-found: error
+
+  build-android:
+    name: Build Android
+    needs: version
+    if: inputs.sdk == 'android' || inputs.sdk == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Placeholder
+        run: echo "Android SDK not yet implemented — skipping build."
+      # TODO: When implemented, bump version → build → commit → package zip → upload artifact.
+
+  build-ios:
+    name: Build iOS
+    needs: version
+    if: inputs.sdk == 'ios' || inputs.sdk == 'all'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Placeholder
+        run: echo "iOS SDK not yet implemented — skipping build."
+      # TODO: When implemented, bump version → swift build → commit → package zip → upload artifact.
+
+  build-react-native:
+    name: Build React Native
+    needs: version
+    if: inputs.sdk == 'react-native' || inputs.sdk == 'all'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-native
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: react-native/.nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Sync shared assets
+        working-directory: ${{ github.workspace }}
+        run: make sync
+
+      - name: Bump react-native/package.json
+        run: |
+          npm pkg set version=${{ needs.version.outputs.version }}
+          grep '"version"' package.json | head -1
+
+      - name: Build library
+        run: |
+          yarn install --immutable
+          yarn prepare
+
+      - name: Commit version bump
+        uses: stefanzweifel/git-auto-commit-action@v7.1.0
+        with:
+          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
+          file_pattern: react-native/package.json
+
+      - name: Package zip
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p release
+          rsync -a \
+            --exclude='.dart_tool' \
+            --exclude='.flutter-plugins-dependencies' \
+            --exclude='build' \
+            --exclude='.idea' \
+            --exclude='.vscode' \
+            --exclude='*.iml' \
+            --exclude='node_modules' \
+            --exclude='.DS_Store' \
+            --exclude='.turbo' \
+            --exclude='.yarn/cache' \
+            --exclude='.yarn/install-state.gz' \
+            --exclude='.yarn/unplugged' \
+            --exclude='coverage' \
+            --exclude='example/ios' \
+            --exclude='example/android' \
+            --exclude='example/.expo' \
+            react-native/ release/busha_pay_react_native/
+          (cd release && zip -rq "busha_pay_react_native-${{ needs.version.outputs.version }}.zip" busha_pay_react_native)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: busha_pay_react_native
+          path: release/busha_pay_react_native-${{ needs.version.outputs.version }}.zip
+          if-no-files-found: error
+
+  package:
+    name: Create GitHub release
+    needs: [version, build-flutter, build-android, build-ios, build-react-native]
+    # Run when the version job succeeded and no build job failed. Skipped
+    # builds (because of `if:` not matching the selected sdk) are OK.
+    if: |
+      always() &&
+      needs.version.result == 'success' &&
+      needs.build-flutter.result != 'failure' && needs.build-flutter.result != 'cancelled' &&
+      needs.build-android.result != 'failure' && needs.build-android.result != 'cancelled' &&
+      needs.build-ios.result != 'failure' && needs.build-ios.result != 'cancelled' &&
+      needs.build-react-native.result != 'failure' && needs.build-react-native.result != 'cancelled'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ needs.version.outputs.tag }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: List release artifacts
+        run: ls -la release/ || true
 
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.version.outputs.tag }}
+          tag: ${{ needs.version.outputs.tag }}
           generateReleaseNotes: true
           artifacts: release/*.zip
 
   update-changelog:
-    needs: release
+    name: Update CHANGELOG
+    needs: [version, package]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.ref_name }}
 
-      - name: Update CHANGELOG
-        uses: requarks/changelog-action@v1
-        with:
-          token: ${{ github.token }}
-          tag: ${{ needs.release.outputs.tag }}
+      - name: Update SDK CHANGELOG(s)
+        run: |
+          set -euo pipefail
 
-      - name: Commit CHANGELOG.md
-        uses: stefanzweifel/git-auto-commit-action@v7
+          VERSION='${{ needs.version.outputs.version }}'
+          DATE=$(date -u +%Y-%m-%d)
+
+          update_sdk_changelog() {
+            local sdk=$1
+            local dir=$2
+            local changelog="${dir}/CHANGELOG.md"
+
+            local prev_tag
+            prev_tag=$(git tag --list "${sdk}/v*" --sort=-v:refname \
+              | grep -v "^${sdk}/v${VERSION}$" \
+              | head -1 || true)
+
+            local range
+            if [ -n "$prev_tag" ]; then
+              range="${prev_tag}..HEAD"
+            else
+              range="HEAD"
+            fi
+
+            local commits
+            commits=$(git log "$range" --pretty='- %s (%h)' -- "${dir}/" 'shared/' || true)
+            [ -z "$commits" ] && commits='- No notable changes.'
+
+            local tmp
+            tmp=$(mktemp)
+            {
+              printf '## %s - %s\n\n' "$VERSION" "$DATE"
+              printf '%s\n\n' "$commits"
+              [ -f "$changelog" ] && cat "$changelog"
+            } > "$tmp"
+            mv "$tmp" "$changelog"
+
+            echo "--- updated $changelog ---"
+            head -20 "$changelog"
+            echo
+          }
+
+          case '${{ inputs.sdk }}' in
+            flutter)       update_sdk_changelog flutter flutter ;;
+            android)       update_sdk_changelog android android ;;
+            ios)           update_sdk_changelog ios ios ;;
+            react-native)  update_sdk_changelog react-native react-native ;;
+            all)
+              update_sdk_changelog flutter flutter
+              update_sdk_changelog react-native react-native
+              # TODO: add android + ios once those SDKs ship.
+              ;;
+          esac
+
+      - name: Commit CHANGELOG(s)
+        uses: stefanzweifel/git-auto-commit-action@v7.1.0
         with:
           branch: ${{ github.ref_name }}
           commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: 'docs: ${{ needs.release.outputs.tag }} [skip ci]'
-          file_pattern: CHANGELOG.md
+          commit_message: 'docs: ${{ needs.version.outputs.tag }} [skip ci]'
+          file_pattern: |
+            flutter/CHANGELOG.md
+            android/CHANGELOG.md
+            ios/CHANGELOG.md
+            react-native/CHANGELOG.md

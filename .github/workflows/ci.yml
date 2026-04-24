@@ -56,7 +56,7 @@ jobs:
       run:
         working-directory: flutter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v2
         with:
@@ -100,21 +100,51 @@ jobs:
       run:
         working-directory: react-native
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: react-native/.nvmrc
-          cache: yarn
-          cache-dependency-path: react-native/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Sync shared HTML
-        working-directory: .
+        working-directory: ${{ github.workspace }}
         run: make sync
 
-      - run: corepack enable
-      - run: yarn install --immutable
-      - run: yarn typecheck
-      - run: yarn lint
-      - run: yarn test
-      - run: yarn prepare
+      - name: Restore dependencies
+        id: yarn-cache
+        uses: actions/cache/restore@v5.0.5
+        with:
+          path: |
+            react-native/**/node_modules
+            react-native/.yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('react-native/yarn.lock') }}-${{ hashFiles('react-native/**/package.json', '!react-native/node_modules/**') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-${{ hashFiles('react-native/yarn.lock') }}
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install --immutable
+
+      - name: Save dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5.0.5
+        with:
+          path: |
+            react-native/**/node_modules
+            react-native/.yarn/install-state.gz
+          key: ${{ steps.yarn-cache.outputs.cache-primary-key }}
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Build library
+        run: yarn prepare
