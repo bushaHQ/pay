@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "busha.payreactnative.example.busha-pay",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -13,7 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "busha.payreactnative.example"
+      "bundleIdentifier": "busha.payreactnative.example",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "co.busha.apple",
+          "co.busha.boro.development"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,6 +33,21 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "manifestQueries": {
+              "package": [
+                "co.busha.android",
+                "co.busha.android.development"
+              ]
+            }
+          }
+        }
+      ]
+    ]
   }
 }
