@@ -19,6 +19,7 @@ class PaymentMethodChooser extends StatelessWidget {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
@@ -34,10 +35,9 @@ class PaymentMethodChooser extends StatelessWidget {
                     'Pay ${_formatAmount(config.quoteAmount)} ${config.quoteCurrency}',
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2, color: _kTextHigh),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: _kTextHigh),
-                    onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Close',
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Icon(Icons.close, color: _kTextHigh),
                   ),
                 ],
               ),

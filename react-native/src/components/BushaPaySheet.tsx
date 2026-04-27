@@ -174,26 +174,28 @@ export const BushaPaySheet = ({
           style={[styles.sheet, !initialized && styles.sheetLoading]}
           onPress={() => {}}
         >
-          <WebView
-            ref={webViewRef}
-            source={webViewSource}
-            originWhitelist={['*']}
-            injectedJavaScriptBeforeContentLoaded={DOCUMENT_START_SCRIPTS}
-            injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
-            javaScriptEnabled
-            domStorageEnabled
-            setSupportMultipleWindows
-            mixedContentMode="compatibility"
-            onMessage={handleMessage}
-            onShouldStartLoadWithRequest={handleShouldStartLoad}
-            onLoadEnd={handleLoadEnd}
-            style={styles.webview}
-          />
-          {!initialized && (
-            <View style={styles.loader} pointerEvents="none">
-              <ChooserShimmer />
-            </View>
-          )}
+          <View style={styles.card}>
+            <WebView
+              ref={webViewRef}
+              source={webViewSource}
+              originWhitelist={['*']}
+              injectedJavaScriptBeforeContentLoaded={DOCUMENT_START_SCRIPTS}
+              injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
+              javaScriptEnabled
+              domStorageEnabled
+              setSupportMultipleWindows
+              mixedContentMode="compatibility"
+              onMessage={handleMessage}
+              onShouldStartLoadWithRequest={handleShouldStartLoad}
+              onLoadEnd={handleLoadEnd}
+              style={styles.webview}
+            />
+            {!initialized && (
+              <View style={styles.loader} pointerEvents="none">
+                <ChooserShimmer />
+              </View>
+            )}
+          </View>
         </Pressable>
       </Pressable>
     </Modal>
@@ -208,13 +210,17 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: '92%',
-    borderRadius: 16,
-    overflow: 'hidden',
     backgroundColor: 'transparent',
   },
   sheetLoading: {
     paddingHorizontal: 16,
     paddingVertical: 24,
+  },
+  card: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   webview: { flex: 1, backgroundColor: 'transparent' },
   loader: { ...StyleSheet.absoluteFillObject },
