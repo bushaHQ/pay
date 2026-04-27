@@ -5,9 +5,6 @@ import '../busha_pay_config.dart';
 
 enum PaymentChoice { bushaApp, stablecoins }
 
-/// Modal dialog shown when [BushaPay.checkout] is invoked.
-/// Mirrors the design of pug-pay's "Choose a payment method" screen so
-/// the SDK flow and the web checkout flow look and feel identical.
 class PaymentMethodChooser extends StatelessWidget {
   final BushaPayConfig config;
 
