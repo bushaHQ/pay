@@ -173,7 +173,6 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   bool _isProcessing = false;
-  BushaPayResult? result;
 
   void _handleBuy() {
     setState(() => _isProcessing = true);
@@ -191,9 +190,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       ),
       onComplete: (result) {
         if (!mounted) return;
-        this.result = result;
-        _isProcessing = false;
-        setState(() {});
+        setState(() => _isProcessing = false);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                ReceiptPage(product: widget.product, result: result),
+          ),
+        );
       },
     );
   }
@@ -231,13 +234,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
             const Spacer(),
-            if (result case final result?)
-              Text(
-                result.toString(),
-                style: TextStyle(fontSize: 24),
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 16),
             FilledButton(
               onPressed: _isProcessing ? null : _handleBuy,
               style: FilledButton.styleFrom(
