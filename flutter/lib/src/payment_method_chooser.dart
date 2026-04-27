@@ -159,11 +159,7 @@ class _SecuredByFooter extends StatelessWidget {
         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: _kTextMid),
       ),
       const SizedBox(width: 8),
-      SvgPicture.asset(
-        'assets/icons/busha-logo.svg',
-        package: 'busha_pay',
-        height: 14,
-      ),
+      SvgPicture.asset('assets/icons/busha-logo.svg', package: 'busha_pay', height: 14),
     ],
   );
 }
