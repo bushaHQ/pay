@@ -244,15 +244,16 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) => Container(
     height: MediaQuery.of(context).size.height * 0.92,
+    padding: _checkoutInitialized ? null : const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
     decoration: const BoxDecoration(
       color: Colors.transparent,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      borderRadius: BorderRadius.all(Radius.circular(16)),
     ),
     child: Column(
       children: [
         Expanded(
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.all(Radius.circular(16)),
             child: Stack(
               children: [
                 if (_htmlContent != null)
