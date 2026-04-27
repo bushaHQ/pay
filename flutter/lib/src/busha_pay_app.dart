@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
 import 'busha_pay_sdk.dart';
+import 'chooser_shimmer.dart';
 
 /// Which option (if any) the sheet should auto-click on pug-pay's
 /// payment-method chooser, so the user skips straight to the target flow.
@@ -307,19 +308,15 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
                       if (!_formSubmitted) {
                         _formSubmitted = true;
                         _submitCheckoutForm();
-                      } else if (!_checkoutInitialized) {
-                        setState(() => _checkoutInitialized = true);
-                        _injectAutoSelect(controller);
+                        return;
                       }
+                      if (!_checkoutInitialized) {
+                        setState(() => _checkoutInitialized = true);
+                      }
+                      _injectAutoSelect(controller);
                     },
                   ),
-                if (!_checkoutInitialized)
-                  Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00C853))),
-                    ),
-                  ),
+                if (!_checkoutInitialized) const ChooserShimmer(),
               ],
             ),
           ),
