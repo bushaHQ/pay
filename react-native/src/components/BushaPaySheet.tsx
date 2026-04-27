@@ -170,7 +170,10 @@ export const BushaPaySheet = ({
         onPress={() => deliverResult(cancelled())}
         accessibilityLabel="Close checkout"
       >
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, !initialized && styles.sheetLoading]}
+          onPress={() => {}}
+        >
           <WebView
             ref={webViewRef}
             source={webViewSource}
@@ -205,10 +208,13 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: '92%',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'transparent',
+  },
+  sheetLoading: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
   },
   webview: { flex: 1, backgroundColor: 'transparent' },
   loader: { ...StyleSheet.absoluteFillObject },
