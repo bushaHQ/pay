@@ -79,6 +79,7 @@
     "react": "19.2.0",
     "react-native": "0.83.6",
     "react-native-builder-bob": "^0.41.0",
+    "react-native-svg": "15.13.0",
     "react-native-webview": "13.16.0",
     "release-it": "^19.2.4",
     "turbo": "^2.8.21",
@@ -88,6 +89,7 @@
     "expo-application": ">=6.0.0",
     "react": "*",
     "react-native": "*",
+    "react-native-svg": ">=13.0.0",
     "react-native-webview": ">=13.0.0"
   },
   "workspaces": [

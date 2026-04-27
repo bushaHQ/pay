@@ -24,6 +24,11 @@ export default defineConfig([
     },
   },
   {
-    ignores: ['node_modules/', 'lib/', 'src/checkout-html.ts'],
+    ignores: [
+      'node_modules/',
+      'lib/',
+      'src/checkout-html.ts',
+      'src/svg-icons.ts',
+    ],
   },
 ]);

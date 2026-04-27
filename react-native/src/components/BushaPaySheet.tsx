@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
 import WebView, {
   type WebViewMessageEvent,
   type WebViewProps,
@@ -26,6 +18,7 @@ import {
   autoSelectScript,
   initCheckoutScript,
 } from '../user-scripts';
+import { ChooserShimmer } from './ChooserShimmer';
 
 export type PugPayAutoSelect = 'none' | 'bushaApp' | 'stablecoins';
 
@@ -172,62 +165,63 @@ export const BushaPaySheet = ({
       animationType="slide"
       onRequestClose={() => deliverResult(cancelled())}
     >
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          <Text style={styles.title}>Busha Pay</Text>
-          <Pressable
-            onPress={() => deliverResult(cancelled())}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Close checkout"
-          >
-            <Text style={styles.close}>✕</Text>
-          </Pressable>
-        </View>
-        <View style={styles.webviewContainer}>
-          <WebView
-            ref={webViewRef}
-            source={webViewSource}
-            originWhitelist={['*']}
-            injectedJavaScriptBeforeContentLoaded={DOCUMENT_START_SCRIPTS}
-            injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
-            javaScriptEnabled
-            domStorageEnabled
-            setSupportMultipleWindows
-            mixedContentMode="compatibility"
-            onMessage={handleMessage}
-            onShouldStartLoadWithRequest={handleShouldStartLoad}
-            onLoadEnd={handleLoadEnd}
-          />
-          {!initialized && (
-            <View style={styles.loader} pointerEvents="none">
-              <ActivityIndicator size="large" color="#00C853" />
-            </View>
-          )}
-        </View>
-      </View>
+      <Pressable
+        style={styles.backdrop}
+        onPress={() => deliverResult(cancelled())}
+        accessibilityLabel="Close checkout"
+      >
+        <Pressable
+          style={[styles.sheet, !initialized && styles.sheetLoading]}
+          onPress={() => {}}
+        >
+          <View style={styles.card}>
+            <WebView
+              ref={webViewRef}
+              source={webViewSource}
+              originWhitelist={['*']}
+              injectedJavaScriptBeforeContentLoaded={DOCUMENT_START_SCRIPTS}
+              injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
+              javaScriptEnabled
+              domStorageEnabled
+              setSupportMultipleWindows
+              mixedContentMode="compatibility"
+              onMessage={handleMessage}
+              onShouldStartLoadWithRequest={handleShouldStartLoad}
+              onLoadEnd={handleLoadEnd}
+              style={styles.webview}
+            />
+            {!initialized && (
+              <View style={styles.loader} pointerEvents="none">
+                <ChooserShimmer />
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    height: '92%',
+    backgroundColor: 'transparent',
+  },
+  sheetLoading: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    paddingVertical: 24,
   },
-  title: { fontSize: 16, fontWeight: '600' },
-  close: { fontSize: 18, color: '#333' },
-  webviewContainer: { flex: 1 },
-  loader: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
+  card: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
+  webview: { flex: 1, backgroundColor: 'transparent' },
+  loader: { ...StyleSheet.absoluteFillObject },
 });

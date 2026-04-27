@@ -124,13 +124,9 @@ class BushaPay {
   }
 
   static Future<BushaPayResult> _runCheckout({required BuildContext context, required BushaPayConfig config}) async {
-    final choice = await showModalBottomSheet<PaymentChoice>(
+    final choice = await showDialog<PaymentChoice>(
       context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
+      barrierDismissible: true,
       builder: (_) => PaymentMethodChooser(config: config),
     );
 
