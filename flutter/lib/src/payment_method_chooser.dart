@@ -1,60 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../busha_pay_config.dart';
 
 enum PaymentChoice { bushaApp, stablecoins }
 
-/// Bottom-sheet chooser shown when [BushaPay.checkout] is invoked.
-/// Lets the user pick between paying via the installed Busha app (deep
-/// link) or stable coins (web checkout).
+/// Modal dialog shown when [BushaPay.checkout] is invoked.
+/// Mirrors the design of pug-pay's "Choose a payment method" screen so
+/// the SDK flow and the web checkout flow look and feel identical.
 class PaymentMethodChooser extends StatelessWidget {
   final BushaPayConfig config;
 
   const PaymentMethodChooser({super.key, required this.config});
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    child: SafeArea(
-      top: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+  Widget build(BuildContext context) => Dialog(
+    backgroundColor: _kContainmentPrimary,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Pay ${_formatAmount(config.quoteAmount)} ${config.quoteCurrency}',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2, color: _kTextHigh),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: _kTextHigh),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'Close',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'To Pushup Design Agency',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: _kTextMid),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Choose a payment method',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: _kTextHigh),
+              ),
+              const SizedBox(height: 12),
+              _PaymentMethodTile(
+                name: 'Busha',
+                description: 'Make payment directly from your busha account',
+                iconAssetPath: 'assets/icons/busha.svg',
+                onTap: () => Navigator.of(context).pop(PaymentChoice.bushaApp),
+              ),
+              const SizedBox(height: 16),
+              _PaymentMethodTile(
+                name: 'Stablecoins',
+                description: 'Make payment from an external wallet',
+                iconAssetPath: 'assets/icons/wallet-outline.svg',
+                onTap: () => Navigator.of(context).pop(PaymentChoice.stablecoins),
+              ),
+              const SizedBox(height: 32),
+              const _SecuredByFooter(),
+            ],
           ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Pay ${_formatAmount(config.quoteAmount)} ${config.quoteCurrency}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Divider(height: 1),
-          _OptionTile(
-            emoji: '🟢',
-            title: 'Pay with Busha app',
-            subtitle: 'Open the Busha app to complete payment',
-            onTap: () => Navigator.pop(context, PaymentChoice.bushaApp),
-          ),
-          const Divider(height: 1, indent: 72),
-          _OptionTile(
-            emoji: '💳',
-            title: 'Pay with Stablecoins',
-            subtitle: 'Pay from an external crypto wallet',
-            onTap: () => Navigator.pop(context, PaymentChoice.stablecoins),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 
@@ -69,25 +85,91 @@ class PaymentMethodChooser extends StatelessWidget {
   }
 }
 
-class _OptionTile extends StatelessWidget {
-  final String emoji;
-  final String title;
-  final String subtitle;
+class _PaymentMethodTile extends StatelessWidget {
+  final String name;
+  final String description;
+  final String iconAssetPath;
   final VoidCallback onTap;
 
-  const _OptionTile({required this.emoji, required this.title, required this.subtitle, required this.onTap});
+  const _PaymentMethodTile({
+    required this.name,
+    required this.description,
+    required this.iconAssetPath,
+    required this.onTap,
+  });
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    leading: SizedBox(
-      width: 40,
-      height: 40,
-      child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: _kContainmentTertiary, borderRadius: BorderRadius.circular(16)),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(color: _kContainmentSecondary, shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: SvgPicture.asset(
+                iconAssetPath,
+                package: 'busha_pay',
+                width: 20,
+                height: 20,
+                colorFilter: const ColorFilter.mode(_kTextHigh, BlendMode.srcIn),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _kTextHigh),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: _kTextMid),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 24, color: _kTextMid),
+          ],
+        ),
+      ),
     ),
-    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-    subtitle: Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-    trailing: const Icon(Icons.chevron_right),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-    onTap: onTap,
   );
 }
+
+class _SecuredByFooter extends StatelessWidget {
+  const _SecuredByFooter();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const Text(
+        'Secured by',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: _kTextMid),
+      ),
+      const SizedBox(width: 8),
+      SvgPicture.asset(
+        'assets/icons/busha-logo.svg',
+        package: 'busha_pay',
+        height: 14,
+      ),
+    ],
+  );
+}
+
+const Color _kTextHigh = Color(0xFF000000);
+const Color _kTextMid = Color(0xFF586558);
+const Color _kContainmentPrimary = Color(0xFFEDF2ED);
+const Color _kContainmentTertiary = Color(0xFFFFFFFF);
+const Color _kContainmentSecondary = Color(0xFFD1D9D1);
