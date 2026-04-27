@@ -2,11 +2,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import type { BushaPayConfig } from '../config';
-import {
-  BUSHA_ICON_SVG,
-  BUSHA_LOGO_SVG,
-  WALLET_OUTLINE_SVG,
-} from '../svg-icons';
+import { BUSHA_LOGO_SVG, BUSHA_SVG, WALLET_OUTLINE_SVG } from '../svg-icons';
 
 export type PaymentChoice = 'bushaApp' | 'stablecoins';
 
@@ -62,7 +58,7 @@ export const PaymentMethodChooser = ({
           <PaymentMethodTile
             name="Busha"
             description="Make payment directly from your busha account"
-            iconXml={BUSHA_ICON_SVG}
+            iconXml={BUSHA_SVG}
             onPress={() => onChoose('bushaApp')}
           />
           <View style={styles.gap16} />
