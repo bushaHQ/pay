@@ -24,12 +24,6 @@ class BushaPayConfig {
   /// Customer phone number.
   final String? metaPhone;
 
-  /// Source label for the payment (e.g., 'mobile-app').
-  final String? source;
-
-  /// Internal ID tied to the payment source in your app.
-  final String? sourceId;
-
   const BushaPayConfig({
     required this.quoteAmount,
     required this.quoteCurrency,
@@ -39,8 +33,6 @@ class BushaPayConfig {
     this.metaName,
     this.metaEmail,
     this.metaPhone,
-    this.source,
-    this.sourceId,
   });
 
   /// Creates a copy with the given fields replaced.
@@ -53,8 +45,6 @@ class BushaPayConfig {
     String? metaName,
     String? metaEmail,
     String? metaPhone,
-    String? source,
-    String? sourceId,
   }) => BushaPayConfig(
     quoteAmount: quoteAmount ?? this.quoteAmount,
     quoteCurrency: quoteCurrency ?? this.quoteCurrency,
@@ -64,8 +54,6 @@ class BushaPayConfig {
     metaName: metaName ?? this.metaName,
     metaEmail: metaEmail ?? this.metaEmail,
     metaPhone: metaPhone ?? this.metaPhone,
-    source: source ?? this.source,
-    sourceId: sourceId ?? this.sourceId,
   );
 
   /// Converts to the JSON shape expected by commerce-js.
@@ -83,8 +71,6 @@ class BushaPayConfig {
     'devMode': devMode,
     'callback_url': callbackUrl,
     'meta': {'name': ?metaName, 'email': ?metaEmail, 'phone_number': ?metaPhone},
-    'source': ?source,
-    'source_id': ?sourceId,
   };
 
   /// Converts to a map of form fields for direct POST to the checkout page.
@@ -105,7 +91,5 @@ class BushaPayConfig {
     'meta[name]': ?metaName,
     'meta[email]': ?metaEmail,
     'meta[phone_number]': ?metaPhone,
-    'source': ?source,
-    'source_id': ?sourceId,
   };
 }

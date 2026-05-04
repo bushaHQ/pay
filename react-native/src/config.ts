@@ -7,8 +7,6 @@ export type BushaPayConfig = {
   metaName?: string;
   metaEmail?: string;
   metaPhone?: string;
-  source?: string;
-  sourceId?: string;
 };
 
 import { getOrigin } from './url-utils';
@@ -32,7 +30,5 @@ export const toFormFields = (
   if (config.metaName) fields['meta[name]'] = config.metaName;
   if (config.metaEmail) fields['meta[email]'] = config.metaEmail;
   if (config.metaPhone) fields['meta[phone_number]'] = config.metaPhone;
-  if (config.source) fields.source = config.source;
-  if (config.sourceId) fields.source_id = config.sourceId;
   return fields;
 };

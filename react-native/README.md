@@ -372,8 +372,6 @@ When payment completes via the **Busha app**, only `paymentId` and `status` are 
 | `metaName` | `string?` | No | Customer name |
 | `metaEmail` | `string?` | No | Customer email |
 | `metaPhone` | `string?` | No | Customer phone |
-| `source` | `string?` | No | Source label. Defaults to `'payment-link'`. |
-| `sourceId` | `string?` | No | Optional ID you use to correlate the payment with your own records. |
 
 ## Find Your Public Key
 

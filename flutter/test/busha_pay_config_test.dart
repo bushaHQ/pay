@@ -62,8 +62,6 @@ void main() {
     test('omits null optional fields', () {
       final json = baseConfig.toCommerceJson(publicKey: 'pub_test', devMode: false, callbackUrl: 'cb://callback');
       expect(json.containsKey('reference'), isFalse);
-      expect(json.containsKey('source'), isFalse);
-      expect(json.containsKey('source_id'), isFalse);
       expect(json['meta'], isA<Map>());
       final meta = json['meta'] as Map;
       expect(meta.containsKey('name'), isFalse);
@@ -81,8 +79,6 @@ void main() {
         metaName: 'Alice',
         metaEmail: 'a@b.co',
         metaPhone: '+2348000000000',
-        source: 'mobile',
-        sourceId: 'sid-1',
       );
       final json = c.toCommerceJson(publicKey: 'pk', devMode: false, callbackUrl: 'cb://cb');
       expect(json['reference'], 'ref-9');
@@ -90,8 +86,6 @@ void main() {
       expect(meta['name'], 'Alice');
       expect(meta['email'], 'a@b.co');
       expect(meta['phone_number'], '+2348000000000');
-      expect(json['source'], 'mobile');
-      expect(json['source_id'], 'sid-1');
     });
   });
 
@@ -118,7 +112,6 @@ void main() {
       );
       expect(fields.containsKey('reference'), isFalse);
       expect(fields.containsKey('meta[name]'), isFalse);
-      expect(fields.containsKey('source'), isFalse);
     });
 
     test('includes meta fields with bracketed keys when set', () {
