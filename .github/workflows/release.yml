@@ -261,6 +261,48 @@ jobs:
             flutter/pubspec.yaml
             react-native/package.json
 
+  publish-flutter-pub:
+    name: Publish Flutter to pub.dev
+    needs: [version, commit-bumps]
+    if: |
+      always() &&
+      needs.version.result == 'success' &&
+      needs.commit-bumps.result == 'success' &&
+      (inputs.sdk == 'flutter' || inputs.sdk == 'all')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.0
+          cache: true
+
+      - name: Sync shared assets
+        working-directory: ${{ github.workspace }}
+        run: make sync
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Configure pub.dev OIDC auth
+        uses: dart-lang/setup-dart@v1
+
+      - name: Publish to pub.dev
+        run: flutter pub publish --force
+
   package:
     name: Create GitHub release
     needs: [version, commit-bumps]
