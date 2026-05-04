@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -8,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
 import 'chooser.dart';
+import 'deep_link.dart';
 import 'sheet.dart';
 
 /// Busha Pay environment.
@@ -127,10 +127,12 @@ class BushaPay {
   }
 
   static Future<BushaPayResult> _runCheckout({required BuildContext context, required BushaPayConfig config}) async {
+    final loader = merchantNameLoaderForTesting;
     final choice = await showDialog<PaymentChoice>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => PaymentMethodChooser(config: config),
+      builder: (_) =>
+          PaymentMethodChooser(config: config, merchantNameLoader: loader == null ? null : () => loader(publicKey)),
     );
 
     if (choice == null) return const BushaPayCancelled();
@@ -153,42 +155,17 @@ class BushaPay {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (_) => BushaPaySheet(config: config, autoSelect: autoSelect),
+      builder: (_) => BushaPaySheet(config: config, autoSelect: autoSelect, skipHtmlLoad: skipSheetHtmlLoadForTesting),
     );
     return result ?? const BushaPayCancelled();
   }
 
-  /// Platform-specific Busha app URL scheme for the current environment.
-  static String? get _bushaAppScheme {
-    if (Platform.isIOS) {
-      return isDevMode ? 'co.busha.boro.development' : 'co.busha.apple';
-    }
-    if (Platform.isAndroid) {
-      return isDevMode ? 'co.busha.android.development' : 'co.busha.android';
-    }
-    return null;
-  }
-
-  /// Builds the Busha app deep link carrying the fields required for the
-  /// Busha app to create the payment server-side. `reference` is only
-  /// included when the merchant provided one on [config].
-  static Uri? _buildBushaAppDeepLink(BushaPayConfig config) {
-    final scheme = _bushaAppScheme;
-    if (scheme == null) return null;
-    return Uri(
-      scheme: scheme,
-      host: 'busha.co',
-      path: '/pay',
-      queryParameters: {
-        'public_key': publicKey,
-        'quote_amount': config.quoteAmount,
-        'quote_currency': config.quoteCurrency,
-        'target_currency': config.targetCurrency,
-        if (config.reference != null) 'reference': config.reference!,
-        'callback_url': callbackUrl,
-      },
-    );
-  }
+  static Uri? _buildBushaAppDeepLink(BushaPayConfig config) => buildBushaAppDeepLink(
+    scheme: bushaAppScheme(_environment),
+    config: config,
+    publicKey: publicKey,
+    callbackUrl: callbackUrl,
+  );
 
   /// Launches the Busha app and waits for the callback URL to resolve.
   ///
@@ -262,6 +239,24 @@ class BushaPay {
 
   /// Unregister the callback handler.
   static void unregisterCallbackHandler() => _pendingCallbackHandler = null;
+
+  @visibleForTesting
+  static Future<String?> Function(String publicKey)? merchantNameLoaderForTesting;
+
+  @visibleForTesting
+  static bool skipSheetHtmlLoadForTesting = false;
+
+  @visibleForTesting
+  static void resetForTesting() {
+    _publicKey = null;
+    _environment = BushaEnvironment.live;
+    _isCheckoutInProgress = false;
+    _packageName = null;
+    _directLaunchCompleter = null;
+    _pendingCallbackHandler = null;
+    merchantNameLoaderForTesting = null;
+    skipSheetHtmlLoadForTesting = false;
+  }
 }
 
 /// Fires its [onResume] callback whenever the app returns to the foreground.

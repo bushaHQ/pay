@@ -10,7 +10,10 @@ enum PaymentChoice { bushaApp, stablecoins }
 class PaymentMethodChooser extends StatefulWidget {
   final BushaPayConfig config;
 
-  const PaymentMethodChooser({super.key, required this.config});
+  @visibleForTesting
+  final Future<String?> Function()? merchantNameLoader;
+
+  const PaymentMethodChooser({super.key, required this.config, this.merchantNameLoader});
 
   @override
   State<PaymentMethodChooser> createState() => _PaymentMethodChooserState();
@@ -22,7 +25,8 @@ class _PaymentMethodChooserState extends State<PaymentMethodChooser> {
   @override
   void initState() {
     super.initState();
-    fetchMerchantName(BushaPay.publicKey).then((name) {
+    final loader = widget.merchantNameLoader ?? () => fetchMerchantName(BushaPay.publicKey);
+    loader().then((name) {
       if (!mounted || name == null) return;
       setState(() => _merchantName = name);
     });
