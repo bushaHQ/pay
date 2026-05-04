@@ -221,7 +221,7 @@ jobs:
           if-no-files-found: error
 
   commit-bumps:
-    name: Commit version bumps
+    name: Commit version bumps + CHANGELOG
     needs: [version, build-flutter, build-android, build-ios, build-react-native]
     if: |
       always() &&
@@ -237,6 +237,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          fetch-tags: true
           ref: ${{ github.ref_name }}
 
       - name: Bump flutter/pubspec.yaml
@@ -252,14 +253,66 @@ jobs:
           npm pkg set version=${{ needs.version.outputs.version }}
           grep '"version"' package.json | head -1
 
-      - name: Commit version bumps
+      - name: Update SDK CHANGELOG(s)
+        run: |
+          set -euo pipefail
+          VERSION='${{ needs.version.outputs.version }}'
+          DATE=$(date -u +%Y-%m-%d)
+
+          update_sdk_changelog() {
+            local sdk=$1
+            local dir=$2
+            local changelog="${dir}/CHANGELOG.md"
+            local prev_tag
+            prev_tag=$(git tag --list "${sdk}/v*" --sort=-v:refname \
+              | grep -v "^${sdk}/v${VERSION}$" \
+              | head -1 || true)
+            local range
+            if [ -n "$prev_tag" ]; then
+              range="${prev_tag}..HEAD"
+            else
+              range="HEAD"
+            fi
+            local commits
+            commits=$(git log "$range" --pretty='- %s (%h)' -- "${dir}/" 'shared/' || true)
+            [ -z "$commits" ] && commits='- No notable changes.'
+            local tmp
+            tmp=$(mktemp)
+            {
+              printf '## %s - %s\n\n' "$VERSION" "$DATE"
+              printf '%s\n\n' "$commits"
+              [ -f "$changelog" ] && cat "$changelog"
+            } > "$tmp"
+            mv "$tmp" "$changelog"
+            echo "--- updated $changelog ---"
+            head -20 "$changelog"
+            echo
+          }
+
+          case '${{ inputs.sdk }}' in
+            flutter)       update_sdk_changelog flutter flutter ;;
+            android)       update_sdk_changelog android android ;;
+            ios)           update_sdk_changelog ios ios ;;
+            react-native)  update_sdk_changelog react-native react-native ;;
+            all)
+              update_sdk_changelog flutter flutter
+              update_sdk_changelog react-native react-native
+              # TODO: add android + ios once those SDKs ship.
+              ;;
+          esac
+
+      - name: Commit bumps + CHANGELOG
         uses: stefanzweifel/git-auto-commit-action@v7.1.0
         with:
           commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
           file_pattern: |
             flutter/pubspec.yaml
+            flutter/CHANGELOG.md
             react-native/package.json
+            react-native/CHANGELOG.md
+            android/CHANGELOG.md
+            ios/CHANGELOG.md
 
   publish-flutter-pub:
     name: Publish Flutter to pub.dev
@@ -355,83 +408,3 @@ jobs:
             echo "Created ${SDK_TAG} -> ${ALL_TAG}"
           done
 
-  update-changelog:
-    name: Update CHANGELOG
-    needs: [version, package]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-          fetch-tags: true
-          ref: ${{ github.ref_name }}
-
-      - name: Update SDK CHANGELOG(s)
-        run: |
-          set -euo pipefail
-
-          VERSION='${{ needs.version.outputs.version }}'
-          DATE=$(date -u +%Y-%m-%d)
-
-          update_sdk_changelog() {
-            local sdk=$1
-            local dir=$2
-            local changelog="${dir}/CHANGELOG.md"
-
-            local prev_tag
-            prev_tag=$(git tag --list "${sdk}/v*" --sort=-v:refname \
-              | grep -v "^${sdk}/v${VERSION}$" \
-              | head -1 || true)
-
-            local range
-            if [ -n "$prev_tag" ]; then
-              range="${prev_tag}..HEAD"
-            else
-              range="HEAD"
-            fi
-
-            local commits
-            commits=$(git log "$range" --pretty='- %s (%h)' -- "${dir}/" 'shared/' || true)
-            [ -z "$commits" ] && commits='- No notable changes.'
-
-            local tmp
-            tmp=$(mktemp)
-            {
-              printf '## %s - %s\n\n' "$VERSION" "$DATE"
-              printf '%s\n\n' "$commits"
-              [ -f "$changelog" ] && cat "$changelog"
-            } > "$tmp"
-            mv "$tmp" "$changelog"
-
-            echo "--- updated $changelog ---"
-            head -20 "$changelog"
-            echo
-          }
-
-          case '${{ inputs.sdk }}' in
-            flutter)       update_sdk_changelog flutter flutter ;;
-            android)       update_sdk_changelog android android ;;
-            ios)           update_sdk_changelog ios ios ;;
-            react-native)  update_sdk_changelog react-native react-native ;;
-            all)
-              update_sdk_changelog flutter flutter
-              update_sdk_changelog react-native react-native
-              # TODO: add android + ios once those SDKs ship.
-              ;;
-          esac
-
-      - name: Commit CHANGELOG(s)
-        uses: stefanzweifel/git-auto-commit-action@v7.1.0
-        with:
-          branch: ${{ github.ref_name }}
-          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: 'docs: ${{ needs.version.outputs.tag }} [skip ci]'
-          file_pattern: |
-            flutter/CHANGELOG.md
-            android/CHANGELOG.md
-            ios/CHANGELOG.md
-            react-native/CHANGELOG.md
