@@ -22,22 +22,21 @@ class _UrlLauncherFake {
   final List<String> launched = [];
 
   void install() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      _urlLauncherChannel,
-      (call) async {
-        switch (call.method) {
-          case 'canLaunch':
-            return canLaunchAnswer;
-          case 'launch':
-          case 'launchUrl':
-            final args = call.arguments as Map<Object?, Object?>? ?? const {};
-            final url = (args['url'] as String?) ?? '';
-            launched.add(url);
-            return true;
-        }
-        return null;
-      },
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_urlLauncherChannel, (
+      call,
+    ) async {
+      switch (call.method) {
+        case 'canLaunch':
+          return canLaunchAnswer;
+        case 'launch':
+        case 'launchUrl':
+          final args = call.arguments as Map<Object?, Object?>? ?? const {};
+          final url = (args['url'] as String?) ?? '';
+          launched.add(url);
+          return true;
+      }
+      return null;
+    });
   }
 
   void uninstall() {
@@ -126,28 +125,24 @@ void main() {
     expect((result! as BushaPaySuccess).paymentId, 'PAYR_99');
   });
 
-  testWidgets(
-    'Busha + canLaunchUrl=false → falls through to web sheet',
-    (tester) async {
-      urlLauncher.canLaunchAnswer = false;
-      BushaPayResult? result;
-      await _openCheckout(tester, (r) => result = r);
+  testWidgets('Busha + canLaunchUrl=false → falls through to web sheet', (tester) async {
+    urlLauncher.canLaunchAnswer = false;
+    BushaPayResult? result;
+    await _openCheckout(tester, (r) => result = r);
 
-      await tester.tap(find.text('Busha'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Busha'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-      expect(urlLauncher.launched, isEmpty);
-      expect(find.bySemanticsLabel('Loading payment options'), findsOneWidget);
+    expect(urlLauncher.launched, isEmpty);
+    expect(find.bySemanticsLabel('Loading payment options'), findsOneWidget);
 
-      final uri = Uri.parse('$_callbackScheme://callback?status=cancelled');
-      BushaPay.handleDeepLink(uri);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(result, isA<BushaPayError>());
-    },
-    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
-  );
+    final uri = Uri.parse('$_callbackScheme://callback?status=cancelled');
+    BushaPay.handleDeepLink(uri);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(result, isA<BushaPayError>());
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets(
     'Busha + canLaunchUrl=true → launchUrl called → deep-link callback resolves to BushaPaySuccess',
@@ -174,6 +169,70 @@ void main() {
 
       expect(result, isA<BushaPaySuccess>());
       expect((result! as BushaPaySuccess).paymentId, 'PAYR_BA1');
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'Busha launch + cancelled callback resolves to BushaPayCancelled',
+    (tester) async {
+      urlLauncher.canLaunchAnswer = true;
+      BushaPayResult? result;
+      await _openCheckout(tester, (r) => result = r);
+
+      await tester.tap(find.text('Busha'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final uri = Uri.parse('$_callbackScheme://callback?status=cancelled');
+      expect(BushaPay.handleDeepLink(uri), isTrue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(result, isA<BushaPayCancelled>());
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'Busha launch + error callback uses error_message and error_code from query',
+    (tester) async {
+      urlLauncher.canLaunchAnswer = true;
+      BushaPayResult? result;
+      await _openCheckout(tester, (r) => result = r);
+
+      await tester.tap(find.text('Busha'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final uri = Uri.parse('$_callbackScheme://callback?status=failed&error_code=NET_DOWN&error_message=No%20signal');
+      expect(BushaPay.handleDeepLink(uri), isTrue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(result, isA<BushaPayError>());
+      final err = result! as BushaPayError;
+      expect(err.code, 'NET_DOWN');
+      expect(err.message, 'No signal');
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'Busha launch + resume without callback within 1.5s resolves to BushaPayCancelled',
+    (tester) async {
+      urlLauncher.canLaunchAnswer = true;
+      BushaPayResult? result;
+      await _openCheckout(tester, (r) => result = r);
+
+      await tester.tap(find.text('Busha'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 1600));
+
+      expect(result, isA<BushaPayCancelled>());
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),
   );
