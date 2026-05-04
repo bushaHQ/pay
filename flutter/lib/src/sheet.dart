@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
+import 'bridge.dart';
 import 'scripts.dart';
 import 'sdk.dart';
 import 'shimmer.dart';
@@ -35,7 +36,18 @@ class BushaPaySheet extends StatefulWidget {
 
   final PugPayAutoSelect autoSelect;
 
-  const BushaPaySheet({super.key, required this.config, this.autoSelect = PugPayAutoSelect.none});
+  /// Skips HTML asset loading so the InAppWebView never builds. Used by
+  /// widget tests that only care about lifecycle / deep-link plumbing,
+  /// since `flutter_inappwebview` has no platform impl in unit tests.
+  @visibleForTesting
+  final bool skipHtmlLoad;
+
+  const BushaPaySheet({
+    super.key,
+    required this.config,
+    this.autoSelect = PugPayAutoSelect.none,
+    this.skipHtmlLoad = false,
+  });
 
   @override
   State<BushaPaySheet> createState() => _BushaPaySheetState();
@@ -53,7 +65,7 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     BushaPay.registerCallbackHandler(_onDeepLinkReceived);
-    _loadHtml();
+    if (!widget.skipHtmlLoad) _loadHtml();
   }
 
   Future<void> _loadHtml() async {
@@ -96,32 +108,13 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
 
   void _onBridgeMessage(String message) {
     if (_resultDelivered) return;
-
-    try {
-      final payload = jsonDecode(message) as Map<String, dynamic>;
-      final type = payload['type'] as String?;
-      final data = payload['data'];
-
-      switch (type) {
-        case 'ready':
-          if (mounted) {
-            setState(() => _checkoutInitialized = true);
-          }
-        case 'success':
-          _deliverResult(BushaPaySuccess.fromCommerceJs(data as Map<String, dynamic>));
-        case 'close':
-          _deliverResult(const BushaPayCancelled());
-        case 'error':
-          final errorData = data as Map<String, dynamic>? ?? {};
-          _deliverResult(
-            BushaPayError(
-              message: errorData['message'] as String? ?? 'An error occurred',
-              code: errorData['code'] as String?,
-            ),
-          );
-      }
-    } catch (e) {
-      debugPrint('BushaPay: Failed to parse bridge message: $e');
+    switch (parseBridgeMessage(message)) {
+      case BridgeReady():
+        if (mounted) setState(() => _checkoutInitialized = true);
+      case BridgeResult(:final result):
+        _deliverResult(result);
+      case BridgeUnknown():
+        break;
     }
   }
 
@@ -151,8 +144,7 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
   }
 
   Future<bool> _handleNavigation(Uri uri) async {
-    const web = {'http', 'https', 'about', 'data', 'blob'};
-    if (web.contains(uri.scheme)) return false;
+    if (isWebScheme(uri.scheme)) return false;
 
     final canOpen = await canLaunchUrl(uri);
     if (canOpen) {

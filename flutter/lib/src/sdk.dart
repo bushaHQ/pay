@@ -262,6 +262,16 @@ class BushaPay {
 
   /// Unregister the callback handler.
   static void unregisterCallbackHandler() => _pendingCallbackHandler = null;
+
+  @visibleForTesting
+  static void resetForTesting() {
+    _publicKey = null;
+    _environment = BushaEnvironment.live;
+    _isCheckoutInProgress = false;
+    _packageName = null;
+    _directLaunchCompleter = null;
+    _pendingCallbackHandler = null;
+  }
 }
 
 /// Fires its [onResume] callback whenever the app returns to the foreground.
