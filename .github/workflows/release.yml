@@ -369,6 +369,20 @@ jobs:
           fi
           echo "RELEASE_PAT length=${#TOKEN}"
 
+      - name: Create + push tag
+        run: |
+          set -euo pipefail
+          TAG='${{ needs.version.outputs.tag }}'
+          git fetch --tags origin
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q .; then
+            echo "Tag ${TAG} already exists on remote — skipping push."
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              tag "$TAG"
+          git push origin "$TAG"
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
@@ -376,6 +390,7 @@ jobs:
           tag: ${{ needs.version.outputs.tag }}
           generateReleaseNotes: true
           artifacts: release/*.zip,release/*.tgz
+          allowUpdates: true
 
       - name: Mirror tag to each SDK
         if: inputs.sdk == 'all'
