@@ -409,3 +409,12 @@ jobs:
             echo "Created ${SDK_TAG} -> ${ALL_TAG}"
           done
 
+      - name: Dispatch pub.dev publish (Flutter)
+        if: inputs.sdk == 'flutter' || inputs.sdk == 'all'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          set -euo pipefail
+          TAG='flutter/v${{ needs.version.outputs.version }}'
+          echo "Dispatching publish-flutter.yml on $TAG"
+          gh workflow run publish-flutter.yml --ref "$TAG" -f tag="$TAG"
