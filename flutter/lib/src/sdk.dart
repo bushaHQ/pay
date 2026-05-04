@@ -7,8 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
-import 'busha_pay_app.dart';
-import 'payment_method_chooser.dart';
+import 'chooser.dart';
+import 'sheet.dart';
 
 /// Busha Pay environment.
 enum BushaEnvironment {
@@ -65,6 +65,9 @@ class BushaPay {
 
   /// The checkout page URL for the current environment.
   static String get checkoutUrl => isDevMode ? 'https://staging.pay.busha.co/pay' : 'https://pay.busha.co/pay';
+
+  /// The Busha platform API base URL for the current environment.
+  static String get platformUrl => isDevMode ? 'https://api.sandbox.busha.so' : 'https://api.busha.io';
 
   /// The configured public key.
   static String get publicKey {
@@ -138,7 +141,6 @@ class BushaPay {
       if (deepLink != null && await canLaunchUrl(deepLink)) {
         return _launchBushaApp(deepLink);
       }
-      // Busha app not installed → fall through to the web checkout.
     }
 
     final autoSelect = choice == PaymentChoice.bushaApp ? PugPayAutoSelect.bushaApp : PugPayAutoSelect.stablecoins;

@@ -2,13 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../busha_pay_config.dart';
+import 'sdk.dart';
+import 'merchant_api.dart';
 
 enum PaymentChoice { bushaApp, stablecoins }
 
-class PaymentMethodChooser extends StatelessWidget {
+class PaymentMethodChooser extends StatefulWidget {
   final BushaPayConfig config;
 
   const PaymentMethodChooser({super.key, required this.config});
+
+  @override
+  State<PaymentMethodChooser> createState() => _PaymentMethodChooserState();
+}
+
+class _PaymentMethodChooserState extends State<PaymentMethodChooser> {
+  String? _merchantName;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchMerchantName(BushaPay.publicKey).then((name) {
+      if (!mounted || name == null) return;
+      setState(() => _merchantName = name);
+    });
+  }
 
   @override
   Widget build(BuildContext context) => Dialog(
@@ -29,7 +47,7 @@ class PaymentMethodChooser extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Pay ${_formatAmount(config.quoteAmount)} ${config.quoteCurrency}',
+                    'Pay ${_formatAmount(widget.config.quoteAmount)} ${widget.config.quoteCurrency}',
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2, color: _kTextHigh),
                   ),
                   GestureDetector(
@@ -38,11 +56,13 @@ class PaymentMethodChooser extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'To Pushup Design Agency',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: _kTextMid),
-              ),
+              if (_merchantName case final merchant?) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'To $merchant',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: _kTextMid),
+                ),
+              ],
               const SizedBox(height: 32),
               const Text(
                 'Choose a payment method',
