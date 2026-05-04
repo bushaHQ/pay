@@ -12,7 +12,6 @@
   <form id="checkoutForm" method="POST" style="display:none;"></form>
 
   <script>
-    // Called by the native SDK to populate and submit the checkout form.
     function initCheckout(config) {
       var form = document.getElementById('checkoutForm');
       form.action = config._checkoutUrl;
