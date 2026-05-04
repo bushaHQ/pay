@@ -1,12 +1,11 @@
 name: Publish Flutter to pub.dev
 
 on:
-  push:
-    tags:
-      - 'flutter/v*'
+  release:
+    types: [published]
 
 concurrency:
-  group: publish-flutter-${{ github.ref }}
+  group: publish-flutter-${{ github.event.release.tag_name }}
   cancel-in-progress: false
 
 permissions:
@@ -16,6 +15,7 @@ permissions:
 jobs:
   publish:
     name: Publish to pub.dev
+    if: startsWith(github.event.release.tag_name, 'flutter/v')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,7 +24,7 @@ jobs:
       - name: Checkout (tag ref)
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
