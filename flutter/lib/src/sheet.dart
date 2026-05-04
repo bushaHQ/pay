@@ -8,25 +8,21 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../busha_pay_config.dart';
 import '../busha_pay_result.dart';
-import 'busha_pay_sdk.dart';
-import 'chooser_shimmer.dart';
+import 'scripts.dart';
+import 'sdk.dart';
+import 'shimmer.dart';
 
-/// Which option (if any) the sheet should auto-click on pug-pay's
-/// payment-method chooser, so the user skips straight to the target flow.
 enum PugPayAutoSelect {
   none,
   bushaApp,
   stablecoins;
 
-  /// The `?method=` query-param value pug-pay reads on newer builds.
   String? get queryParam => switch (this) {
     PugPayAutoSelect.bushaApp => 'busha',
     PugPayAutoSelect.stablecoins => 'stablecoins',
     PugPayAutoSelect.none => null,
   };
 
-  /// The leading text of the row in pug-pay's chooser to click as a
-  /// fallback on older pug-pay builds that don't honour `?method=`.
   String? get rowTextPrefix => switch (this) {
     PugPayAutoSelect.bushaApp => 'Busha',
     PugPayAutoSelect.stablecoins => 'Stablecoins',
@@ -37,9 +33,6 @@ enum PugPayAutoSelect {
 class BushaPaySheet extends StatefulWidget {
   final BushaPayConfig config;
 
-  /// Which option on pug-pay's chooser page to auto-click, if any. Set
-  /// from [BushaPay.checkout] based on what the user picked on our own
-  /// chooser.
   final PugPayAutoSelect autoSelect;
 
   const BushaPaySheet({super.key, required this.config, this.autoSelect = PugPayAutoSelect.none});
@@ -47,51 +40,6 @@ class BushaPaySheet extends StatefulWidget {
   @override
   State<BushaPaySheet> createState() => _BushaPaySheetState();
 }
-
-const String _deepLinkEnablerScript = r'''
-(function() {
-  try {
-    delete navigator.getInstalledRelatedApps;
-    Object.defineProperty(navigator, 'getInstalledRelatedApps', {
-      configurable: true,
-      get: function() { return undefined; },
-    });
-  } catch (e) {}
-})();
-''';
-
-const String _bushaPayBridgeShim = r'''
-(function() {
-  window.BushaPayBridge = function(payload) {
-    if (window.flutter_inappwebview) {
-      window.flutter_inappwebview.callHandler('BushaPayBridge', payload);
-    }
-  };
-})();
-''';
-
-const String _messageListenerScript = r'''
-(function() {
-  if (window.__bushaPayListenerAdded) return;
-  window.__bushaPayListenerAdded = true;
-  window.addEventListener('message', function(event) {
-    var data = event.data;
-    if (!data || typeof data !== 'object') return;
-    var status = data.status;
-    var payload = null;
-    if (status === 'INITIALIZED') {
-      payload = JSON.stringify({ type: 'ready', data: {} });
-    } else if (status === 'CANCELLED') {
-      payload = JSON.stringify({ type: 'close', data: data.data || {} });
-    } else if (status === 'COMPLETED') {
-      payload = JSON.stringify({ type: 'success', data: data });
-    }
-    if (payload && window.BushaPayBridge) {
-      window.BushaPayBridge(payload);
-    }
-  });
-})();
-''';
 
 class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserver {
   InAppWebViewController? _webViewController;
@@ -180,38 +128,10 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
   void _injectAutoSelect(InAppWebViewController controller) {
     final rowPrefix = widget.autoSelect.rowTextPrefix;
     if (rowPrefix == null) return;
-    final escaped = jsonEncode(rowPrefix);
-    controller.evaluateJavascript(
-      source:
-          '''
-      (function() {
-        if (window.__bushaPayAutoSelectDone) return;
-        var target = $escaped;
-        function tryClick() {
-          var items = document.querySelectorAll('[role="button"]');
-          for (var i = 0; i < items.length; i++) {
-            var text = (items[i].textContent || '').trim();
-            if (text.indexOf(target) === 0) {
-              window.__bushaPayAutoSelectDone = true;
-              items[i].click();
-              return true;
-            }
-          }
-          return false;
-        }
-        if (tryClick()) return;
-        var obs = new MutationObserver(function() {
-          if (tryClick()) obs.disconnect();
-        });
-        obs.observe(document.body, { childList: true, subtree: true });
-        setTimeout(function() { obs.disconnect(); }, 10000);
-      })();
-    ''',
-    );
+    controller.evaluateJavascript(source: autoSelectScript(rowPrefix));
   }
 
-  /// Submit the checkout form via JS after the bridge HTML loads.
-  void _submitCheckoutForm() {
+  void _submitCheckout() {
     final controller = _webViewController;
     if (controller == null) return;
 
@@ -253,21 +173,21 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
             borderRadius: const BorderRadius.all(Radius.circular(16)),
             child: Stack(
               children: [
-                if (_htmlContent != null)
+                if (_htmlContent case final htmlContent?)
                   InAppWebView(
                     initialData: InAppWebViewInitialData(
-                      data: _htmlContent!,
+                      data: htmlContent,
                       baseUrl: WebUri(BushaPay.checkoutUrl),
                       historyUrl: WebUri(BushaPay.checkoutUrl),
                     ),
                     initialUserScripts: UnmodifiableListView([
-                      UserScript(source: _bushaPayBridgeShim, injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START),
+                      UserScript(source: bushaPayBridgeShim, injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START),
                       UserScript(
-                        source: _messageListenerScript,
+                        source: messageListenerScript,
                         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
                       ),
                       UserScript(
-                        source: _deepLinkEnablerScript,
+                        source: deepLinkEnablerScript,
                         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
                       ),
                     ]),
@@ -305,7 +225,7 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
                     onLoadStop: (controller, url) {
                       if (!_formSubmitted) {
                         _formSubmitted = true;
-                        _submitCheckoutForm();
+                        _submitCheckout();
                         return;
                       }
                       if (!_checkoutInitialized) {

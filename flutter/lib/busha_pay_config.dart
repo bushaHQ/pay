@@ -79,16 +79,12 @@ class BushaPayConfig {
     'quote_currency': quoteCurrency,
     'target_currency': targetCurrency,
     'source_currency': sourceCurrency,
-    if (reference != null) 'reference': reference,
+    'reference': ?reference,
     'devMode': devMode,
     'callback_url': callbackUrl,
-    'meta': {
-      if (metaName != null) 'name': metaName,
-      if (metaEmail != null) 'email': metaEmail,
-      if (metaPhone != null) 'phone_number': metaPhone,
-    },
-    'source': source,
-    if (sourceId != null) 'source_id': sourceId,
+    'meta': {'name': ?metaName, 'email': ?metaEmail, 'phone_number': ?metaPhone},
+    'source': ?source,
+    'source_id': ?sourceId,
   };
 
   /// Converts to a map of form fields for direct POST to the checkout page.
@@ -105,11 +101,11 @@ class BushaPayConfig {
     'callback_url': callbackUrl,
     'displayMode': 'INLINE',
     'parentOrigin': Uri.parse(checkoutUrl).origin,
-    if (reference != null) 'reference': reference!,
-    if (metaName != null) 'meta[name]': metaName!,
-    if (metaEmail != null) 'meta[email]': metaEmail!,
-    if (metaPhone != null) 'meta[phone_number]': metaPhone!,
-    if (source != null) 'source': source!,
-    if (sourceId != null) 'source_id': sourceId!,
+    'reference': ?reference,
+    'meta[name]': ?metaName,
+    'meta[email]': ?metaEmail,
+    'meta[phone_number]': ?metaPhone,
+    'source': ?source,
+    'source_id': ?sourceId,
   };
 }
