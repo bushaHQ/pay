@@ -1,5 +1,6 @@
 ## 0.1.1 - 2026-05-04
 
+- refactor(sdk): drop source / sourceId from BushaPayConfig (214985a)
 - fix(flutter): include checkout HTML asset in published package (0812831)
 
 ## 0.1.0 - 2026-05-04
