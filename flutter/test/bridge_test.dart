@@ -32,9 +32,7 @@ void main() {
     });
 
     test("'error' uses message and code from data", () {
-      final r = parseBridgeMessage(
-        '{"type":"error","data":{"message":"network down","code":"NET_ERR"}}',
-      );
+      final r = parseBridgeMessage('{"type":"error","data":{"message":"network down","code":"NET_ERR"}}');
       expect(r, isA<BridgeResult>());
       final result = (r as BridgeResult).result;
       expect(result, isA<BushaPayError>());
