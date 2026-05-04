@@ -277,14 +277,22 @@ jobs:
               range="HEAD"
             fi
             local commits
-            commits=$(git log "$range" --pretty='- %s (%h)' -- "${dir}/" 'shared/' || true)
+            commits=$(git log "$range" --pretty='- %s (%h)' \
+              --invert-grep -E --grep '^(ci|build)(\(|:)' \
+              -- "${dir}/" 'shared/' || true)
             [ -z "$commits" ] && commits='- No notable changes.'
             local tmp
             tmp=$(mktemp)
             {
               printf '## %s - %s\n\n' "$VERSION" "$DATE"
               printf '%s\n\n' "$commits"
-              [ -f "$changelog" ] && cat "$changelog"
+              if [ -f "$changelog" ]; then
+                awk -v v="$VERSION" '
+                  $0 ~ "^## " v "( |$)" { skip=1; next }
+                  skip && /^## / { skip=0 }
+                  !skip { print }
+                ' "$changelog"
+              fi
             } > "$tmp"
             mv "$tmp" "$changelog"
             echo "--- updated $changelog ---"
