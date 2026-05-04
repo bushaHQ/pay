@@ -305,17 +305,23 @@ jobs:
           esac
 
       - name: Commit bumps + CHANGELOG
-        uses: stefanzweifel/git-auto-commit-action@v7.1.0
-        with:
-          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
-          file_pattern: |
-            flutter/pubspec.yaml
-            flutter/CHANGELOG.md
-            react-native/package.json
-            react-native/CHANGELOG.md
-            android/CHANGELOG.md
-            ios/CHANGELOG.md
+        run: |
+          set -euo pipefail
+          for f in flutter/pubspec.yaml flutter/CHANGELOG.md \
+                   react-native/package.json react-native/CHANGELOG.md \
+                   android/CHANGELOG.md ios/CHANGELOG.md; do
+            [ -f "$f" ] && git add -- "$f"
+          done
+          if git diff --cached --quiet; then
+            echo "Nothing to commit — manifests + CHANGELOG already up to date."
+            exit 0
+          fi
+          echo '--- staged ---'
+          git diff --cached --name-only
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'build(release): ${{ needs.version.outputs.tag }} [skip ci]'
+          git push origin HEAD:${{ github.ref_name }}
 
   publish-flutter-pub:
     name: Publish Flutter to pub.dev
