@@ -77,6 +77,9 @@ jobs:
             VERSION="${{ steps.semver.outputs.nextStrict }}"
           fi
 
+          # Strip any 'sdk/' prefix the semver-action leaks when its tag
+          # prefix contains a slash, then any leading 'v'.
+          VERSION="${VERSION##*/}"
           VERSION="${VERSION#v}"
           # Sanity check: must be a valid SemVer-ish string.
           if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+].+)?$'; then
