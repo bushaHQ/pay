@@ -1,3 +1,7 @@
+## 0.1.1 - 2026-05-04
+
+- fix(flutter): include checkout HTML asset in published package (0812831)
+
 ## 0.1.0 - 2026-05-04
 
 - chore: bump deps versions (769f969)
