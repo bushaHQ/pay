@@ -7,7 +7,7 @@ export const encodeQuery = (params: Record<string, string>): string =>
     .join('&');
 
 export const getOrigin = (absoluteUrl: string): string => {
-  const m = absoluteUrl.match(/^([a-z][a-z0-9+.-]*:\/\/[^/]+)/i);
+  const m = absoluteUrl.match(/^([a-z][a-z0-9+.-]*:\/\/[^/?#]+)/i);
   return m ? (m[1] as string) : absoluteUrl;
 };
 

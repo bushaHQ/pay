@@ -22,13 +22,13 @@ import { ChooserShimmer } from './ChooserShimmer';
 
 export type PugPayAutoSelect = 'none' | 'bushaApp' | 'stablecoins';
 
-const autoSelectParam = (a: PugPayAutoSelect): string | null => {
+export const autoSelectParam = (a: PugPayAutoSelect): string | null => {
   if (a === 'bushaApp') return 'busha';
   if (a === 'stablecoins') return 'stablecoins';
   return null;
 };
 
-const autoSelectRowPrefix = (a: PugPayAutoSelect): string | null => {
+export const autoSelectRowPrefix = (a: PugPayAutoSelect): string | null => {
   if (a === 'bushaApp') return 'Busha';
   if (a === 'stablecoins') return 'Stablecoins';
   return null;
