@@ -13,15 +13,14 @@ jest.mock('expo-application');
 jest.mock('react-native-svg');
 jest.mock('react-native-webview');
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const {
   BushaPaySheet,
   autoSelectParam,
   autoSelectRowPrefix,
 } = require('../BushaPaySheet');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const { BushaPay } = require('../../sdk');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const webViewMock = require('react-native-webview');
 
 const mockOpenURL = jest
@@ -91,9 +90,7 @@ describe('BushaPaySheet — WebView lifecycle', () => {
       />
     );
     act(() => webViewMock.__lastWebView!.fireLoadEnd());
-    expect(webViewMock.__injectedScripts[0]).toContain(
-      '?method=stablecoins'
-    );
+    expect(webViewMock.__injectedScripts[0]).toContain('?method=stablecoins');
   });
 
   test('second onLoadEnd injects autoSelectScript when autoSelect != none', () => {
@@ -137,9 +134,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
-        JSON.stringify({ type: 'ready' })
-      )
+      webViewMock.__lastWebView!.emitMessage(JSON.stringify({ type: 'ready' }))
     );
     expect(screen.queryByLabelText('Loading payment options')).toBeNull();
   });
@@ -181,9 +176,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
-        JSON.stringify({ type: 'close' })
-      )
+      webViewMock.__lastWebView!.emitMessage(JSON.stringify({ type: 'close' }))
     );
     expect(onResult).toHaveBeenCalledWith({ type: 'cancelled' });
   });
@@ -224,9 +217,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
-        JSON.stringify({ type: 'close' })
-      )
+      webViewMock.__lastWebView!.emitMessage(JSON.stringify({ type: 'close' }))
     );
     act(() =>
       webViewMock.__lastWebView!.emitMessage(
@@ -247,9 +238,7 @@ describe('BushaPaySheet — bridge messages', () => {
         onResult={onResult}
       />
     );
-    act(() =>
-      webViewMock.__lastWebView!.emitMessage('not json {')
-    );
+    act(() => webViewMock.__lastWebView!.emitMessage('not json {'));
     expect(onResult).not.toHaveBeenCalled();
   });
 

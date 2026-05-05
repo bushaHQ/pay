@@ -36,7 +36,7 @@ describe('getBushaAppScheme', () => {
   ): typeof import('../environment').getBushaAppScheme => {
     jest.resetModules();
     jest.doMock('react-native', () => ({ Platform: { OS: os } }));
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+
     return require('../environment').getBushaAppScheme;
   };
 

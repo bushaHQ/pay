@@ -1,18 +1,11 @@
-import {
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test,
-} from '@jest/globals';
+import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 jest.mock('expo-application');
 jest.mock('react-native-svg');
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PaymentMethodChooser } = require('../PaymentMethodChooser');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const { BushaPay } = require('../../sdk');
 
 const baseConfig = {
@@ -103,9 +96,7 @@ describe('PaymentMethodChooser merchant line', () => {
         merchantNameLoader={async () => 'Pushup Design Agency'}
       />
     );
-    expect(
-      await screen.findByText('To Pushup Design Agency')
-    ).toBeTruthy();
+    expect(await screen.findByText('To Pushup Design Agency')).toBeTruthy();
   });
 });
 

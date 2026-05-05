@@ -19,7 +19,9 @@ afterEach(() => {
 
 describe('parseCallback', () => {
   test('returns success for status=completed with paymentRequestId', () => {
-    const r = parseCallback(`${SCHEME}://callback?status=completed&paymentRequestId=PAYR_1`);
+    const r = parseCallback(
+      `${SCHEME}://callback?status=completed&paymentRequestId=PAYR_1`
+    );
     expect(r.type).toBe('success');
     expect(r).toMatchObject({
       type: 'success',

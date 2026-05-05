@@ -35,8 +35,7 @@ const WebView = forwardRef<unknown, WebViewProps>((props, ref) => {
     injectJavaScript: (script: string) => {
       __injectedScripts.push(script);
     },
-    emitMessage: (data: string) =>
-      props.onMessage?.({ nativeEvent: { data } }),
+    emitMessage: (data: string) => props.onMessage?.({ nativeEvent: { data } }),
     fireLoadEnd: () => props.onLoadEnd?.(),
     shouldStartLoad: (url: string) =>
       props.onShouldStartLoadWithRequest

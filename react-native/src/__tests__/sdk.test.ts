@@ -38,7 +38,6 @@ jest.mock('react-native', () => ({
 }));
 
 const loadSdk = (): typeof import('../sdk') => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   return require('../sdk');
 };
 
@@ -182,9 +181,9 @@ describe('buildBushaAppDeepLink', () => {
     const sdk = loadSdk();
     sdk.BushaPay.init({ publicKey: 'pub_sb', environment: 'sandbox' });
     const url = sdk.buildBushaAppDeepLink(baseConfig);
-    expect(url!.startsWith('co.busha.android.development://busha.co/pay?')).toBe(
-      true
-    );
+    expect(
+      url!.startsWith('co.busha.android.development://busha.co/pay?')
+    ).toBe(true);
   });
 
   test('omits reference when not provided', () => {

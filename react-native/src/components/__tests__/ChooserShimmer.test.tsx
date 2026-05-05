@@ -4,15 +4,12 @@ import { render, screen } from '@testing-library/react-native';
 jest.mock('expo-application');
 jest.mock('react-native-svg');
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ChooserShimmer } = require('../ChooserShimmer');
 
 describe('ChooserShimmer', () => {
   test('renders with the loading payment options accessibility label', () => {
     render(<ChooserShimmer />);
-    expect(
-      screen.getByLabelText('Loading payment options')
-    ).toBeTruthy();
+    expect(screen.getByLabelText('Loading payment options')).toBeTruthy();
   });
 
   test('unmounts cleanly without throwing', () => {

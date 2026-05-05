@@ -100,7 +100,9 @@ describe('parseUrl', () => {
   });
 
   test('parses custom-scheme callback URLs', () => {
-    const p = parseUrl('co.example.testapp.busha-pay://callback?status=cancelled');
+    const p = parseUrl(
+      'co.example.testapp.busha-pay://callback?status=cancelled'
+    );
     expect(p!.scheme).toBe('co.example.testapp.busha-pay');
     expect(p!.host).toBe('callback');
     expect(p!.query.status).toBe('cancelled');
