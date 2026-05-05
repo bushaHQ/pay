@@ -27,6 +27,7 @@ export default defineConfig([
     ignores: [
       'node_modules/',
       'lib/',
+      'coverage/',
       'src/checkout-html.ts',
       'src/svg-icons.ts',
     ],

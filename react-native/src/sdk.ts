@@ -101,6 +101,12 @@ export const BushaPay = {
    * Call this from your app's URL handler (e.g., `Linking` / `expo-linking`).
    */
   handleDeepLink: handleDeepLinkInternal,
+
+  /** Test-only: clears initialization state. */
+  resetForTesting(): void {
+    state = null;
+    setCallbackScheme('');
+  },
 };
 
 export const buildBushaAppDeepLink = (

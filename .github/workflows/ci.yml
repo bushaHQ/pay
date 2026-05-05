@@ -138,6 +138,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.react-native == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: react-native
@@ -187,6 +189,49 @@ jobs:
 
       - name: Typecheck
         run: yarn typecheck
+
+      - name: Test (with coverage)
+        run: yarn test:coverage
+
+      - name: Enforce minimum coverage
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: react-native/coverage/lcov.info
+          min_coverage: 70
+
+      - name: Extract coverage percentage
+        id: coverage
+        run: |
+          sudo apt-get install -y lcov > /dev/null 2>&1
+          PCT=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | sed 's/.*: \([0-9.]*\)%.*/\1/')
+          echo "percentage=$PCT" >> "$GITHUB_OUTPUT"
+          echo "React Native coverage: $PCT%"
+
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        working-directory: ${{ github.workspace }}
+        run: |
+          PCT="${{ steps.coverage.outputs.percentage }}"
+          if (( $(echo "$PCT >= 90" | bc -l) )); then
+            COLOR="brightgreen"
+          elif (( $(echo "$PCT >= 75" | bc -l) )); then
+            COLOR="green"
+          elif (( $(echo "$PCT >= 60" | bc -l) )); then
+            COLOR="yellow"
+          else
+            COLOR="red"
+          fi
+          printf '{"schemaVersion":1,"label":"react native coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > react-native/coverage-badge.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-native/coverage-badge.json
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: update react native coverage badge [skip ci]"
+            git stash --include-untracked || true
+            git pull --rebase
+            git stash pop || true
+            git push
+          fi
 
       - name: Build library
         run: yarn prepare
