@@ -7,6 +7,9 @@ export const getCheckoutUrl = (env: BushaEnvironment): string =>
     ? 'https://staging.pay.busha.co/pay'
     : 'https://pay.busha.co/pay';
 
+export const getPlatformUrl = (env: BushaEnvironment): string =>
+  env === 'sandbox' ? 'https://api.sandbox.busha.so' : 'https://api.busha.io';
+
 export const getBushaAppScheme = (env: BushaEnvironment): string | null => {
   if (Platform.OS === 'ios') {
     return env === 'sandbox' ? 'co.busha.boro.development' : 'co.busha.apple';
