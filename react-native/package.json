@@ -38,6 +38,7 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "release": "release-it --only-version"
   },
   "keywords": [
@@ -129,6 +130,18 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/__tests__/**",
+      "!src/index.tsx",
+      "!src/checkout-html.ts",
+      "!src/svg-icons.ts"
+    ],
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "lcov"
     ]
   },
   "release-it": {

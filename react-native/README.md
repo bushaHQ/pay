@@ -1,5 +1,8 @@
 # Busha Pay React Native SDK
 
+[![CI](https://github.com/bushaHQ/pay/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/bushaHQ/pay/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/bushaHQ/pay/dev/react-native/coverage-badge.json)
+
 Official React Native SDK for accepting crypto payments via Busha.
 
 ## Installation
