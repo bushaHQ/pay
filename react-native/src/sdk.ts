@@ -3,7 +3,11 @@ import { AppState, Linking } from 'react-native';
 
 import type { BushaPayConfig } from './config';
 import type { BushaEnvironment } from './environment';
-import { getBushaAppScheme, getCheckoutUrl } from './environment';
+import {
+  getBushaAppScheme,
+  getCheckoutUrl,
+  getPlatformUrl,
+} from './environment';
 import type { BushaPayResult } from './result';
 import { cancelled, errorResult } from './result';
 import {
@@ -84,6 +88,10 @@ export const BushaPay = {
 
   get checkoutUrl(): string {
     return getCheckoutUrl(BushaPay.environment);
+  },
+
+  get platformUrl(): string {
+    return getPlatformUrl(BushaPay.environment);
   },
 
   /**

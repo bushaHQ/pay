@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import type { BushaPayConfig } from '../config';
+import { fetchMerchantName } from '../merchant-api';
+import { BushaPay } from '../sdk';
 import { BUSHA_LOGO_SVG, BUSHA_SVG, WALLET_OUTLINE_SVG } from '../svg-icons';
 
 export type PaymentChoice = 'bushaApp' | 'stablecoins';
@@ -11,6 +14,7 @@ type Props = {
   config: BushaPayConfig;
   onChoose: (choice: PaymentChoice) => void;
   onDismiss: () => void;
+  merchantNameLoader?: () => Promise<string | null>;
 };
 
 const formatAmount = (amount: string): string => {
@@ -28,53 +32,74 @@ export const PaymentMethodChooser = ({
   config,
   onChoose,
   onDismiss,
-}: Props) => (
-  <Modal
-    visible={visible}
-    transparent
-    animationType="fade"
-    onRequestClose={onDismiss}
-  >
-    <Pressable style={styles.backdrop} onPress={onDismiss}>
-      <Pressable style={styles.dialog} onPress={() => {}}>
-        <View style={styles.body}>
-          <View style={styles.header}>
-            <Text style={styles.amount}>
-              Pay {formatAmount(config.quoteAmount)} {config.quoteCurrency}
-            </Text>
-            <Pressable
-              onPress={onDismiss}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <Text style={styles.close}>✕</Text>
-            </Pressable>
+  merchantNameLoader,
+}: Props) => {
+  const [merchantName, setMerchantName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loader =
+      merchantNameLoader ??
+      (() => fetchMerchantName(BushaPay.publicKey, BushaPay.platformUrl));
+    loader().then((name) => {
+      if (cancelled || !name) return;
+      setMerchantName(name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [merchantNameLoader]);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onDismiss}
+    >
+      <Pressable style={styles.backdrop} onPress={onDismiss}>
+        <Pressable style={styles.dialog} onPress={() => {}}>
+          <View style={styles.body}>
+            <View style={styles.header}>
+              <Text style={styles.amount}>
+                Pay {formatAmount(config.quoteAmount)} {config.quoteCurrency}
+              </Text>
+              <Pressable
+                onPress={onDismiss}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <Text style={styles.close}>✕</Text>
+              </Pressable>
+            </View>
+            {merchantName && (
+              <Text style={styles.merchant}>To {merchantName}</Text>
+            )}
+            <View style={styles.gap32} />
+            <Text style={styles.heading}>Choose a payment method</Text>
+            <View style={styles.gap12} />
+            <PaymentMethodTile
+              name="Busha"
+              description="Make payment directly from your busha account"
+              iconXml={BUSHA_SVG}
+              onPress={() => onChoose('bushaApp')}
+            />
+            <View style={styles.gap16} />
+            <PaymentMethodTile
+              name="Stablecoins"
+              description="Make payment from an external wallet"
+              iconXml={WALLET_OUTLINE_SVG}
+              onPress={() => onChoose('stablecoins')}
+            />
+            <View style={styles.gap32} />
+            <SecuredByFooter />
           </View>
-          <Text style={styles.merchant}>To Pushup Design Agency</Text>
-          <View style={styles.gap32} />
-          <Text style={styles.heading}>Choose a payment method</Text>
-          <View style={styles.gap12} />
-          <PaymentMethodTile
-            name="Busha"
-            description="Make payment directly from your busha account"
-            iconXml={BUSHA_SVG}
-            onPress={() => onChoose('bushaApp')}
-          />
-          <View style={styles.gap16} />
-          <PaymentMethodTile
-            name="Stablecoins"
-            description="Make payment from an external wallet"
-            iconXml={WALLET_OUTLINE_SVG}
-            onPress={() => onChoose('stablecoins')}
-          />
-          <View style={styles.gap32} />
-          <SecuredByFooter />
-        </View>
+        </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 type TileProps = {
   name: string;
