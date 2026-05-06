@@ -1,4 +1,4 @@
-import type { PaymentMethod } from './components/PaymentMethodChooser';
+import type { PaymentMethod } from './payment-method';
 import { getOrigin } from './url-utils';
 
 export type BushaPayConfig = {

@@ -1,7 +1,7 @@
 export { BushaPay } from './sdk';
 export { BushaPayProvider, useBushaPay } from './provider';
 export type { BushaPayConfig } from './config';
-export type { PaymentMethod } from './components/PaymentMethodChooser';
+export type { PaymentMethod } from './payment-method';
 export type {
   BushaPayResult,
   BushaPaySuccess,

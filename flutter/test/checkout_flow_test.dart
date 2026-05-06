@@ -1,6 +1,6 @@
 import 'package:busha_pay/busha_pay_config.dart';
 import 'package:busha_pay/busha_pay_result.dart';
-import 'package:busha_pay/src/chooser.dart' show PaymentMethod;
+import 'package:busha_pay/src/payment_method.dart';
 import 'package:busha_pay/src/sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

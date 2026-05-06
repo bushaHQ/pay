@@ -1,4 +1,4 @@
-import 'src/chooser.dart' show PaymentMethod;
+import 'src/payment_method.dart';
 
 /// Configuration for a Busha Pay checkout session.
 class BushaPayConfig {

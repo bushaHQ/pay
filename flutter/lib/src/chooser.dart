@@ -4,17 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../busha_pay_config.dart';
 import 'sdk.dart';
 import 'merchant_api.dart';
+import 'payment_method.dart';
 
-/// Payment methods Busha Pay can route through.
-///
-enum PaymentMethod {
-  /// Pay from a Busha account via the Busha mobile app (with web fallback
-  /// when the app isn't installed).
-  bushaApp,
-
-  /// Pay from an external wallet via the stablecoin web checkout.
-  stablecoins,
-}
+export 'payment_method.dart';
 
 class PaymentMethodChooser extends StatefulWidget {
   final BushaPayConfig config;

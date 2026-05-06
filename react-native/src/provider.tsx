@@ -8,10 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 
-import {
-  PaymentMethodChooser,
-  type PaymentMethod,
-} from './components/PaymentMethodChooser';
+import { PaymentMethodChooser } from './components/PaymentMethodChooser';
+import type { PaymentMethod } from './payment-method';
 import {
   BushaPaySheet,
   type PugPayAutoSelect,

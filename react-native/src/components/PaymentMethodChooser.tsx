@@ -4,13 +4,11 @@ import { SvgXml } from 'react-native-svg';
 
 import type { BushaPayConfig } from '../config';
 import { fetchMerchantName } from '../merchant-api';
+import type { PaymentMethod } from '../payment-method';
 import { BushaPay } from '../sdk';
 import { BUSHA_LOGO_SVG, BUSHA_SVG, WALLET_OUTLINE_SVG } from '../svg-icons';
 
-/**
- * Payment methods Busha Pay can route through.
- */
-export type PaymentMethod = 'bushaApp' | 'stablecoins';
+export type { PaymentMethod };
 
 type Props = {
   visible: boolean;
