@@ -1,0 +1,23 @@
+## 0.1.0 - 2026-05-06
+
+- refactor: move PaymentMethod into its own module (278f5e7)
+- docs: document allowedPaymentMethods on both SDK READMEs (f3b0c0f)
+- feat(rn): set allowedPaymentMethods on BushaPayConfig allowing to bypass chooser (eb6db2b)
+- fix(sdk): tighten WebView error messages + document error codes (d22cdcb)
+- fix(sdk): surface WebView load errors as BushaPayError (29cdb61)
+- chore: fix lint issues (f16f7bf)
+- fix(sdk): use the correct query param when skipping the chooser (4224c96)
+- chore: add tests coverage badge (c11c8a1)
+- chore: fix prettier and unused disables (aa897f7)
+- feat: provider/checkout flow integration (8c63282)
+- chore: unit tests (302cbad)
+- chore: tests for merchant api (4da9b1c)
+- feat(rn): resolve merchant name (cf0f2e4)
+- refactor(sdk): drop source / sourceId from BushaPayConfig (214985a)
+- fix(flutter): include checkout HTML asset in published package (0812831)
+- chore: add license (79f80e6)
+- chore: - (fec1dde)
+- chore: correct padding on busha pay webview react native (89b533a)
+- chore: shared icons (b7b9c31)
+- chore: update payment chooser sheet and loading view react native (4312b02)
+

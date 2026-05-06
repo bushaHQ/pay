@@ -1,31 +1,18 @@
+## 0.1.0 - 2026-05-06
+
+- refactor: move PaymentMethod into its own module (278f5e7)
+- refactor(flutter): inline tile filter with collection-if instead of helper (69a55fe)
+- docs: document allowedPaymentMethods on both SDK READMEs (f3b0c0f)
+- feat: set allowedPaymentMethods on BushaPayConfig allowing to bypass chooser (da84cdf)
+- Merge pull request #23 from bushaHQ/fix/webview-error-handling (05beb48)
+- fix(sdk): tighten WebView error messages + document error codes (d22cdcb)
+- fix(sdk): surface WebView load errors as BushaPayError (29cdb61)
+- fix(sdk): use the correct query param when skipping the chooser (4224c96)
+
 ## 0.1.1 - 2026-05-04
 
 - refactor(sdk): drop source / sourceId from BushaPayConfig (214985a)
 - fix(flutter): include checkout HTML asset in published package (0812831)
-
-## 0.1.0 - 2026-05-04
-
-- chore: bump deps versions (769f969)
-- chore: update issue tracker (8b1eec5)
-- test: webview sheet and interactions (dd7bd7a)
-- chore: add license (79f80e6)
-- test(flutter): cover Busha-app callback parsing and resume timeout (bbcbf19)
-- test: checkout flow (651d282)
-- chore: refactor on deep link handling + tests (f0cb372)
-- chore: dart fmt (dd82aed)
-- test(flutter): add unit + widget tests (51b2a43)
-- refactor(flutter): extract bridge parsing + add testability hooks (2929a23)
-- refactor(flutter): tidy lib/src layout and extract webview JS (05e68e6)
-- feat(flutter): resolve merchant name via /v1/merchants (b576e56)
-- chore: clean up example (e4a77fa)
-- chore: remove unneccessary comments (2220b4a)
-- chore: - (fec1dde)
-- chore: dart fmt (5fc7187)
-- chore: correct padding on busha pay webview (1e086db)
-- chore: shared icons (b7b9c31)
-- fix: change point on injecting autojs (60d58c4)
-- feat: loading shimmer for payment webview (7d9dc5d)
-- docs: v0.0.2 [skip ci] (904fb71)
 
 ## 0.0.2 - 2026-04-24
 
