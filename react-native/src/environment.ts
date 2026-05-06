@@ -4,8 +4,8 @@ export type BushaEnvironment = 'sandbox' | 'live';
 
 export const getCheckoutUrl = (env: BushaEnvironment): string =>
   env === 'sandbox'
-    ? 'https://staging.pay.busha.co/pay'
-    : 'https://pay.busha.co/pay';
+    ? 'https://staging.pay.busha.io/pay'
+    : 'https://pay.busha.io/pay';
 
 export const getPlatformUrl = (env: BushaEnvironment): string =>
   env === 'sandbox' ? 'https://api.sandbox.busha.so' : 'https://api.busha.io';

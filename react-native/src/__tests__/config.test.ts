@@ -13,7 +13,7 @@ const baseConfig: BushaPayConfig = {
 const baseOpts = {
   publicKey: 'pk',
   callbackUrl: 'co.example.busha-pay://callback',
-  checkoutUrl: 'https://pay.busha.co/pay',
+  checkoutUrl: 'https://pay.busha.io/pay',
 };
 
 describe('toFormFields', () => {
@@ -33,7 +33,7 @@ describe('toFormFields', () => {
 
   test('derives parentOrigin from the checkout URL origin', () => {
     expect(toFormFields(baseConfig, baseOpts).parentOrigin).toBe(
-      'https://pay.busha.co'
+      'https://pay.busha.io'
     );
   });
 

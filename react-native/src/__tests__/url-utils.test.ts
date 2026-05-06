@@ -24,7 +24,7 @@ describe('encodeQuery', () => {
 
 describe('getOrigin', () => {
   test('extracts scheme + host from an absolute URL', () => {
-    expect(getOrigin('https://pay.busha.co/pay')).toBe('https://pay.busha.co');
+    expect(getOrigin('https://pay.busha.io/pay')).toBe('https://pay.busha.io');
   });
 
   test('preserves port when present', () => {
@@ -50,10 +50,10 @@ describe('parseUrl', () => {
   });
 
   test('parses scheme, host, path', () => {
-    const p = parseUrl('https://pay.busha.co/pay/checkout');
+    const p = parseUrl('https://pay.busha.io/pay/checkout');
     expect(p).not.toBeNull();
     expect(p!.scheme).toBe('https');
-    expect(p!.host).toBe('pay.busha.co');
+    expect(p!.host).toBe('pay.busha.io');
     expect(p!.path).toBe('/pay/checkout');
     expect(p!.query).toEqual({});
   });
