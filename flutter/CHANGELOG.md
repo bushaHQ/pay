@@ -1,3 +1,7 @@
+## 0.2.1 - 2026-05-06
+
+- fix(sdk): point checkout URL at *.io (f1a2682)
+
 ## 0.2.0 - 2026-05-06
 
 - refactor: move PaymentMethod into its own module (278f5e7)
