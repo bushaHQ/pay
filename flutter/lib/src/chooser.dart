@@ -5,15 +5,27 @@ import '../busha_pay_config.dart';
 import 'sdk.dart';
 import 'merchant_api.dart';
 
-enum PaymentChoice { bushaApp, stablecoins }
+/// Payment methods Busha Pay can route through.
+///
+enum PaymentMethod {
+  /// Pay from a Busha account via the Busha mobile app (with web fallback
+  /// when the app isn't installed).
+  bushaApp,
+
+  /// Pay from an external wallet via the stablecoin web checkout.
+  stablecoins,
+}
 
 class PaymentMethodChooser extends StatefulWidget {
   final BushaPayConfig config;
 
+  /// Methods to render as tiles. `null` or an empty list shows everything.
+  final List<PaymentMethod>? allowedPaymentMethods;
+
   @visibleForTesting
   final Future<String?> Function()? merchantNameLoader;
 
-  const PaymentMethodChooser({super.key, required this.config, this.merchantNameLoader});
+  const PaymentMethodChooser({super.key, required this.config, this.allowedPaymentMethods, this.merchantNameLoader});
 
   @override
   State<PaymentMethodChooser> createState() => _PaymentMethodChooserState();
@@ -73,19 +85,7 @@ class _PaymentMethodChooserState extends State<PaymentMethodChooser> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: _kTextHigh),
               ),
               const SizedBox(height: 12),
-              _PaymentMethodTile(
-                name: 'Busha',
-                description: 'Make payment directly from your busha account',
-                iconAssetPath: 'assets/icons/busha.svg',
-                onTap: () => Navigator.of(context).pop(PaymentChoice.bushaApp),
-              ),
-              const SizedBox(height: 16),
-              _PaymentMethodTile(
-                name: 'Stablecoins',
-                description: 'Make payment from an external wallet',
-                iconAssetPath: 'assets/icons/wallet-outline.svg',
-                onTap: () => Navigator.of(context).pop(PaymentChoice.stablecoins),
-              ),
+              ..._buildTiles(context),
               const SizedBox(height: 32),
               const _SecuredByFooter(),
             ],
@@ -94,6 +94,40 @@ class _PaymentMethodChooserState extends State<PaymentMethodChooser> {
       ],
     ),
   );
+
+  List<Widget> _buildTiles(BuildContext context) {
+    final allowed = widget.allowedPaymentMethods;
+    final tiles = <Widget>[];
+
+    void add(PaymentMethod method, _PaymentMethodTile tile) {
+      if (allowed != null && allowed.isNotEmpty && !allowed.contains(method)) {
+        return;
+      }
+      if (tiles.isNotEmpty) tiles.add(const SizedBox(height: 16));
+      tiles.add(tile);
+    }
+
+    add(
+      PaymentMethod.bushaApp,
+      _PaymentMethodTile(
+        name: 'Busha',
+        description: 'Make payment directly from your busha account',
+        iconAssetPath: 'assets/icons/busha.svg',
+        onTap: () => Navigator.of(context).pop(PaymentMethod.bushaApp),
+      ),
+    );
+    add(
+      PaymentMethod.stablecoins,
+      _PaymentMethodTile(
+        name: 'Stablecoins',
+        description: 'Make payment from an external wallet',
+        iconAssetPath: 'assets/icons/wallet-outline.svg',
+        onTap: () => Navigator.of(context).pop(PaymentMethod.stablecoins),
+      ),
+    );
+
+    return tiles;
+  }
 
   static String _formatAmount(String amount) {
     final n = num.tryParse(amount);

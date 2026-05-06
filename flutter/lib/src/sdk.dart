@@ -127,25 +127,34 @@ class BushaPay {
   }
 
   static Future<BushaPayResult> _runCheckout({required BuildContext context, required BushaPayConfig config}) async {
-    final loader = merchantNameLoaderForTesting;
-    final choice = await showDialog<PaymentChoice>(
-      context: context,
-      barrierDismissible: true,
-      builder: (_) =>
-          PaymentMethodChooser(config: config, merchantNameLoader: loader == null ? null : () => loader(publicKey)),
-    );
+    final allowed = config.allowedPaymentMethods;
+    final PaymentMethod? choice;
+    if (allowed != null && allowed.length == 1) {
+      choice = allowed.single;
+    } else {
+      final loader = merchantNameLoaderForTesting;
+      choice = await showDialog<PaymentMethod>(
+        context: context,
+        barrierDismissible: true,
+        builder: (_) => PaymentMethodChooser(
+          config: config,
+          allowedPaymentMethods: allowed,
+          merchantNameLoader: loader == null ? null : () => loader(publicKey),
+        ),
+      );
+    }
 
     if (choice == null) return const BushaPayCancelled();
     if (!context.mounted) return const BushaPayCancelled();
 
-    if (choice == PaymentChoice.bushaApp) {
+    if (choice == PaymentMethod.bushaApp) {
       final deepLink = _buildBushaAppDeepLink(config);
       if (deepLink != null && await canLaunchUrl(deepLink)) {
         return _launchBushaApp(deepLink);
       }
     }
 
-    final autoSelect = choice == PaymentChoice.bushaApp ? PugPayAutoSelect.bushaApp : PugPayAutoSelect.stablecoins;
+    final autoSelect = choice == PaymentMethod.bushaApp ? PugPayAutoSelect.bushaApp : PugPayAutoSelect.stablecoins;
 
     if (!context.mounted) return const BushaPayCancelled();
     final result = await showModalBottomSheet<BushaPayResult>(

@@ -15,12 +15,13 @@ const _config = BushaPayConfig(
 /// Builds the chooser harness, taps "open", and pumps just enough to render
 /// the dialog. Returns the completer that resolves when the dialog dismisses
 /// — callers `await` it *after* simulating the user's tap, never before.
-Future<Completer<PaymentChoice?>> _showChooser(
+Future<Completer<PaymentMethod?>> _showChooser(
   WidgetTester tester, {
   Future<String?> Function()? loader,
   BushaPayConfig config = _config,
+  List<PaymentMethod>? allowedPaymentMethods,
 }) async {
-  final completer = Completer<PaymentChoice?>();
+  final completer = Completer<PaymentMethod?>();
   await tester.pumpWidget(
     MaterialApp(
       home: Builder(
@@ -28,9 +29,13 @@ Future<Completer<PaymentChoice?>> _showChooser(
           body: Center(
             child: ElevatedButton(
               onPressed: () async {
-                final choice = await showDialog<PaymentChoice>(
+                final choice = await showDialog<PaymentMethod>(
                   context: ctx,
-                  builder: (_) => PaymentMethodChooser(config: config, merchantNameLoader: loader ?? () async => null),
+                  builder: (_) => PaymentMethodChooser(
+                    config: config,
+                    allowedPaymentMethods: allowedPaymentMethods,
+                    merchantNameLoader: loader ?? () async => null,
+                  ),
                 );
                 completer.complete(choice);
               },
@@ -95,18 +100,18 @@ void main() {
     expect(find.text('To Pushup Design Agency'), findsOneWidget);
   });
 
-  testWidgets('tapping Busha pops with PaymentChoice.bushaApp', (tester) async {
+  testWidgets('tapping Busha pops with PaymentMethod.bushaApp', (tester) async {
     final completer = await _showChooser(tester);
     await tester.tap(find.text('Busha'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(await completer.future, PaymentChoice.bushaApp);
+    expect(await completer.future, PaymentMethod.bushaApp);
   });
 
-  testWidgets('tapping Stablecoins pops with PaymentChoice.stablecoins', (tester) async {
+  testWidgets('tapping Stablecoins pops with PaymentMethod.stablecoins', (tester) async {
     final completer = await _showChooser(tester);
     await tester.tap(find.text('Stablecoins'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(await completer.future, PaymentChoice.stablecoins);
+    expect(await completer.future, PaymentMethod.stablecoins);
   });
 
   testWidgets('tapping the close icon pops with null', (tester) async {
@@ -114,5 +119,29 @@ void main() {
     await tester.tap(find.byIcon(Icons.close));
     await tester.pump(const Duration(milliseconds: 300));
     expect(await completer.future, isNull);
+  });
+
+  testWidgets('shows all tiles when allowedPaymentMethods is null', (tester) async {
+    await _showChooser(tester);
+    expect(find.text('Busha'), findsOneWidget);
+    expect(find.text('Stablecoins'), findsOneWidget);
+  });
+
+  testWidgets('shows all tiles when allowedPaymentMethods is empty', (tester) async {
+    await _showChooser(tester, allowedPaymentMethods: const []);
+    expect(find.text('Busha'), findsOneWidget);
+    expect(find.text('Stablecoins'), findsOneWidget);
+  });
+
+  testWidgets('hides Stablecoins when only bushaApp is allowed', (tester) async {
+    await _showChooser(tester, allowedPaymentMethods: const [PaymentMethod.bushaApp]);
+    expect(find.text('Busha'), findsOneWidget);
+    expect(find.text('Stablecoins'), findsNothing);
+  });
+
+  testWidgets('hides Busha when only stablecoins is allowed', (tester) async {
+    await _showChooser(tester, allowedPaymentMethods: const [PaymentMethod.stablecoins]);
+    expect(find.text('Busha'), findsNothing);
+    expect(find.text('Stablecoins'), findsOneWidget);
   });
 }
