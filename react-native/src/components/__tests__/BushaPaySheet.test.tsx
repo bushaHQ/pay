@@ -80,7 +80,7 @@ describe('BushaPaySheet — WebView lifecycle', () => {
     expect(script).toContain('https://pay.busha.co/pay');
   });
 
-  test('autoSelect=stablecoins appends ?method=stablecoins to the form action', () => {
+  test('autoSelect=stablecoins appends ?paymentMethod=stablecoins to the form action', () => {
     render(
       <BushaPaySheet
         visible
@@ -90,7 +90,7 @@ describe('BushaPaySheet — WebView lifecycle', () => {
       />
     );
     act(() => webViewMock.__lastWebView!.fireLoadEnd());
-    expect(webViewMock.__injectedScripts[0]).toContain('?method=stablecoins');
+    expect(webViewMock.__injectedScripts[0]).toContain('?paymentMethod=stablecoins');
   });
 
   test('second onLoadEnd injects autoSelectScript when autoSelect != none', () => {

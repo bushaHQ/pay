@@ -91,7 +91,7 @@ export const BushaPaySheet = ({
     });
     const queryMethod = autoSelectParam(autoSelect);
     const formAction = queryMethod
-      ? `${checkoutUrl}?method=${queryMethod}`
+      ? `${checkoutUrl}?paymentMethod=${queryMethod}`
       : checkoutUrl;
     const payload = JSON.stringify({ _checkoutUrl: formAction, ...fields });
     webViewRef.current?.injectJavaScript(initCheckoutScript(payload));

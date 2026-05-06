@@ -135,7 +135,9 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
     );
 
     final queryMethod = widget.autoSelect.queryParam;
-    final formAction = queryMethod != null ? '${BushaPay.checkoutUrl}?method=$queryMethod' : BushaPay.checkoutUrl;
+    final formAction = queryMethod != null
+        ? '${BushaPay.checkoutUrl}?paymentMethod=$queryMethod'
+        : BushaPay.checkoutUrl;
 
     final config = <String, String>{'_checkoutUrl': formAction, ...formFields};
 

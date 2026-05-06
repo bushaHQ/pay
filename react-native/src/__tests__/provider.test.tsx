@@ -166,7 +166,7 @@ describe('BushaPayProvider — Busha app flow', () => {
     expect(screen.getByLabelText('Loading payment options')).toBeTruthy();
     act(() => webViewMock.__lastWebView!.fireLoadEnd());
     const firstScript = webViewMock.__injectedScripts[0];
-    expect(firstScript).toContain('?method=busha');
+    expect(firstScript).toContain('?paymentMethod=busha');
 
     await act(async () => {
       BushaPay.handleDeepLink(`${CALLBACK_PREFIX}?status=cancelled`);
