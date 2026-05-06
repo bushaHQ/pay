@@ -32,6 +32,12 @@ class _MockNavigationAction extends Mock implements NavigationAction {}
 
 class _MockCreateWindowRequest extends Mock implements CreateWindowAction {}
 
+class _MockWebResourceRequest extends Mock implements WebResourceRequest {}
+
+class _MockWebResourceError extends Mock implements WebResourceError {}
+
+class _MockWebResourceResponse extends Mock implements WebResourceResponse {}
+
 class _FakeParams extends Fake implements PlatformInAppWebViewWidgetCreationParams {}
 
 class _FakeBuildContext extends Fake implements BuildContext {}
@@ -120,6 +126,32 @@ void main() {
     urlLauncher.uninstall();
     BushaPay.resetForTesting();
   });
+
+  Future<Future<BushaPayResult?>> pushSheet(WidgetTester tester) async {
+    late Future<BushaPayResult?> routeFuture;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  routeFuture = Navigator.of(ctx).push<BushaPayResult>(
+                    MaterialPageRoute<BushaPayResult>(builder: (_) => const BushaPaySheet(config: _config)),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump();
+    return routeFuture;
+  }
 
   Future<void> pumpSheet(WidgetTester tester, {PugPayAutoSelect autoSelect = PugPayAutoSelect.none}) async {
     await tester.pumpWidget(
@@ -262,5 +294,129 @@ void main() {
     expect(result, isA<BushaPaySuccess>());
     expect((result! as BushaPaySuccess).paymentId, 'PAYR_42');
     expect(find.byType(BushaPaySheet), findsNothing);
+  });
+
+  testWidgets('main-frame onReceivedError delivers WEBVIEW_LOAD_ERROR', (tester) async {
+    final routeFuture = await pushSheet(tester);
+    final params = capturedParams as PlatformInAppWebViewWidgetCreationParams;
+
+    final request = _MockWebResourceRequest();
+    when(() => request.isForMainFrame).thenReturn(true);
+    final error = _MockWebResourceError();
+    when(() => error.description).thenReturn('No internet');
+
+    params.onReceivedError?.call(_MockController(), request, error);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final result = await routeFuture;
+    expect(result, isA<BushaPayError>());
+    final err = result as BushaPayError;
+    expect(err.code, 'WEBVIEW_LOAD_ERROR');
+    expect(err.message, contains('No internet'));
+  });
+
+  testWidgets('sub-resource onReceivedError is ignored', (tester) async {
+    await pushSheet(tester);
+    final params = capturedParams as PlatformInAppWebViewWidgetCreationParams;
+
+    final request = _MockWebResourceRequest();
+    when(() => request.isForMainFrame).thenReturn(false);
+    final error = _MockWebResourceError();
+    when(() => error.description).thenReturn('favicon 404');
+
+    params.onReceivedError?.call(_MockController(), request, error);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(BushaPaySheet), findsOneWidget);
+  });
+
+  testWidgets('main-frame onReceivedHttpError delivers WEBVIEW_HTTP_ERROR with status', (tester) async {
+    final routeFuture = await pushSheet(tester);
+    final params = capturedParams as PlatformInAppWebViewWidgetCreationParams;
+
+    final request = _MockWebResourceRequest();
+    when(() => request.isForMainFrame).thenReturn(true);
+    final response = _MockWebResourceResponse();
+    when(() => response.statusCode).thenReturn(503);
+
+    params.onReceivedHttpError?.call(_MockController(), request, response);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final result = await routeFuture;
+    expect(result, isA<BushaPayError>());
+    final err = result as BushaPayError;
+    expect(err.code, 'WEBVIEW_HTTP_ERROR');
+    expect(err.message, contains('503'));
+  });
+
+  testWidgets('main-frame HTTP error with statusCode 0 falls back to WEBVIEW_LOAD_ERROR', (tester) async {
+    final routeFuture = await pushSheet(tester);
+    final params = capturedParams as PlatformInAppWebViewWidgetCreationParams;
+
+    final request = _MockWebResourceRequest();
+    when(() => request.isForMainFrame).thenReturn(true);
+    final response = _MockWebResourceResponse();
+    when(() => response.statusCode).thenReturn(0);
+
+    params.onReceivedHttpError?.call(_MockController(), request, response);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final result = await routeFuture;
+    expect((result as BushaPayError).code, 'WEBVIEW_LOAD_ERROR');
+  });
+
+  testWidgets('sub-resource onReceivedHttpError is ignored', (tester) async {
+    await pushSheet(tester);
+    final params = capturedParams as PlatformInAppWebViewWidgetCreationParams;
+
+    final request = _MockWebResourceRequest();
+    when(() => request.isForMainFrame).thenReturn(false);
+    final response = _MockWebResourceResponse();
+    when(() => response.statusCode).thenReturn(404);
+
+    params.onReceivedHttpError?.call(_MockController(), request, response);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(BushaPaySheet), findsOneWidget);
+  });
+
+  testWidgets('bootstrap timeout fires WEBVIEW_TIMEOUT when bridge never ready', (tester) async {
+    final routeFuture = await pushSheet(tester);
+    // Advance past the 30s budget. pump() doesn't dispatch real Timers
+    // but it does drain the FakeAsync clock used by tester.binding.
+    await tester.pump(const Duration(seconds: 31));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final result = await routeFuture;
+    expect(result, isA<BushaPayError>());
+    expect((result! as BushaPayError).code, 'WEBVIEW_TIMEOUT');
+  });
+
+  testWidgets('bridge ready cancels the bootstrap timeout', (tester) async {
+    await pushSheet(tester);
+    final params = capturedParams as PlatformInAppWebViewWidgetCreationParams;
+
+    final controller = _MockController();
+    final handlers = <String, JavaScriptHandlerCallback>{};
+    when(
+      () => controller.addJavaScriptHandler(
+        handlerName: any(named: 'handlerName'),
+        callback: any(named: 'callback'),
+      ),
+    ).thenAnswer((invocation) {
+      handlers[invocation.namedArguments[#handlerName] as String] =
+          invocation.namedArguments[#callback] as JavaScriptHandlerCallback;
+    });
+    params.onWebViewCreated?.call(controller);
+    handlers['BushaPayBridge']?.call(['{"type":"ready","data":{}}']);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 31));
+
+    expect(find.byType(BushaPaySheet), findsOneWidget);
   });
 }

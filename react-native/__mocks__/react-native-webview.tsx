@@ -5,10 +5,20 @@ export type WebViewMessageEvent = {
   nativeEvent: { data: string };
 };
 
+export type WebViewErrorEvent = {
+  nativeEvent: { url?: string; description?: string };
+};
+
+export type WebViewHttpErrorEvent = {
+  nativeEvent: { url?: string; statusCode?: number; description?: string };
+};
+
 export type WebViewProps = ViewProps & {
   source?: unknown;
   onMessage?: (event: WebViewMessageEvent) => void;
   onLoadEnd?: () => void;
+  onError?: (event: WebViewErrorEvent) => void;
+  onHttpError?: (event: WebViewHttpErrorEvent) => void;
   onShouldStartLoadWithRequest?: (request: { url: string }) => boolean;
   injectedJavaScriptBeforeContentLoaded?: string;
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
@@ -23,6 +33,12 @@ export type MockWebViewHandle = {
   injectJavaScript: (script: string) => void;
   emitMessage: (data: string) => void;
   fireLoadEnd: () => void;
+  fireError: (url: string, description?: string) => void;
+  fireHttpError: (
+    url: string,
+    statusCode: number,
+    description?: string
+  ) => void;
   shouldStartLoad: (url: string) => boolean;
   injected: string[];
   props: WebViewProps;
@@ -37,6 +53,12 @@ const WebView = forwardRef<unknown, WebViewProps>((props, ref) => {
     },
     emitMessage: (data: string) => props.onMessage?.({ nativeEvent: { data } }),
     fireLoadEnd: () => props.onLoadEnd?.(),
+    fireError: (url: string, description?: string) =>
+      props.onError?.({ nativeEvent: { url, description } }),
+    fireHttpError: (url: string, statusCode: number, description?: string) =>
+      props.onHttpError?.({
+        nativeEvent: { url, statusCode, description },
+      }),
     shouldStartLoad: (url: string) =>
       props.onShouldStartLoadWithRequest
         ? props.onShouldStartLoadWithRequest({ url })

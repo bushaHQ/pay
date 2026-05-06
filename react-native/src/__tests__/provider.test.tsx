@@ -164,7 +164,7 @@ describe('BushaPayProvider — Busha app flow', () => {
     });
     expect(mockOpenURL).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Loading payment options')).toBeTruthy();
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
     const firstScript = webViewMock.__injectedScripts[0];
     expect(firstScript).toContain('?paymentMethod=busha');
 

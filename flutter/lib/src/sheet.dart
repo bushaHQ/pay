@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
@@ -54,11 +55,14 @@ class BushaPaySheet extends StatefulWidget {
 }
 
 class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserver {
+  static const Duration _bootstrapTimeout = Duration(seconds: 30);
+
   InAppWebViewController? _webViewController;
   bool _resultDelivered = false;
   String? _htmlContent;
   bool _checkoutInitialized = false;
   bool _formSubmitted = false;
+  Timer? _bootstrapTimeoutTimer;
 
   @override
   void initState() {
@@ -66,17 +70,28 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
     WidgetsBinding.instance.addObserver(this);
     BushaPay.registerCallbackHandler(_onDeepLinkReceived);
     if (!widget.skipHtmlLoad) _loadHtml();
+    _bootstrapTimeoutTimer = Timer(_bootstrapTimeout, _onBootstrapTimeout);
   }
 
   Future<void> _loadHtml() async {
-    final html = await rootBundle.loadString('packages/busha_pay/assets/busha_pay_checkout.html');
-    if (mounted) {
-      setState(() => _htmlContent = html);
+    try {
+      final html = await rootBundle.loadString('packages/busha_pay/assets/busha_pay_checkout.html');
+      if (mounted) {
+        setState(() => _htmlContent = html);
+      }
+    } catch (e) {
+      _deliverResult(BushaPayError(message: 'Failed to load checkout page: $e', code: 'HTML_LOAD_ERROR'));
     }
+  }
+
+  void _onBootstrapTimeout() {
+    if (_resultDelivered || _checkoutInitialized) return;
+    _deliverResult(const BushaPayError(message: 'Checkout timed out before loading', code: 'WEBVIEW_TIMEOUT'));
   }
 
   @override
   void dispose() {
+    _bootstrapTimeoutTimer?.cancel();
     BushaPay.unregisterCallbackHandler();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -100,6 +115,7 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
   void _deliverResult(BushaPayResult result) {
     if (_resultDelivered) return;
     _resultDelivered = true;
+    _bootstrapTimeoutTimer?.cancel();
 
     if (mounted) {
       Navigator.of(context).pop(result);
@@ -110,12 +126,32 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
     if (_resultDelivered) return;
     switch (parseBridgeMessage(message)) {
       case BridgeReady():
+        _bootstrapTimeoutTimer?.cancel();
         if (mounted) setState(() => _checkoutInitialized = true);
       case BridgeResult(:final result):
         _deliverResult(result);
       case BridgeUnknown():
         break;
     }
+  }
+
+  void _onWebViewLoadError(WebResourceRequest request, String description) {
+    // Sub-resource failures (analytics, fonts, third-party iframes)
+    // shouldn't tear down the whole checkout. Only main-frame errors
+    // are fatal.
+    if (request.isForMainFrame != true) return;
+    _deliverResult(BushaPayError(message: 'Could not load checkout: $description', code: 'WEBVIEW_LOAD_ERROR'));
+  }
+
+  void _onWebViewHttpError(WebResourceRequest request, int statusCode) {
+    if (request.isForMainFrame != true) return;
+    // Some Android variants emit a synthetic 0 for non-HTTP errors;
+    // treat those as a generic load error rather than HTTP-specific.
+    if (statusCode == 0) {
+      _deliverResult(const BushaPayError(message: 'Could not load checkout', code: 'WEBVIEW_LOAD_ERROR'));
+      return;
+    }
+    _deliverResult(BushaPayError(message: 'Checkout failed (HTTP $statusCode)', code: 'WEBVIEW_HTTP_ERROR'));
   }
 
   void _injectAutoSelect(InAppWebViewController controller) {
@@ -227,6 +263,9 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
                       }
                       _injectAutoSelect(controller);
                     },
+                    onReceivedError: (_, request, error) => _onWebViewLoadError(request, error.description),
+                    onReceivedHttpError: (_, request, errorResponse) =>
+                        _onWebViewHttpError(request, errorResponse.statusCode ?? 0),
                   ),
                 if (!_checkoutInitialized) const ChooserShimmer(),
               ],
