@@ -1,3 +1,14 @@
+## 0.2.0 - 2026-05-06
+
+- refactor: move PaymentMethod into its own module (278f5e7)
+- refactor(flutter): inline tile filter with collection-if instead of helper (69a55fe)
+- docs: document allowedPaymentMethods on both SDK READMEs (f3b0c0f)
+- feat: set allowedPaymentMethods on BushaPayConfig allowing to bypass chooser (da84cdf)
+- Merge pull request #23 from bushaHQ/fix/webview-error-handling (05beb48)
+- fix(sdk): tighten WebView error messages + document error codes (d22cdcb)
+- fix(sdk): surface WebView load errors as BushaPayError (29cdb61)
+- fix(sdk): use the correct query param when skipping the chooser (4224c96)
+
 ## 0.1.0 - 2026-05-06
 
 - refactor: move PaymentMethod into its own module (278f5e7)
