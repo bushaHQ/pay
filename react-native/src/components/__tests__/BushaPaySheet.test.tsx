@@ -90,7 +90,9 @@ describe('BushaPaySheet — WebView lifecycle', () => {
       />
     );
     act(() => webViewMock.__lastWebView!.fireLoadEnd());
-    expect(webViewMock.__injectedScripts[0]).toContain('?paymentMethod=stablecoins');
+    expect(webViewMock.__injectedScripts[0]).toContain(
+      '?paymentMethod=stablecoins'
+    );
   });
 
   test('second onLoadEnd injects autoSelectScript when autoSelect != none', () => {
