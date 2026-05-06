@@ -10,7 +10,7 @@ import {
 
 import {
   PaymentMethodChooser,
-  type PaymentChoice,
+  type PaymentMethod,
 } from './components/PaymentMethodChooser';
 import {
   BushaPaySheet,
@@ -77,11 +77,8 @@ export const BushaPayProvider = ({
     []
   );
 
-  const handleChoice = useCallback(
-    async (choice: PaymentChoice) => {
-      const config = chooserConfig;
-      if (!config) return;
-
+  const routeChoice = useCallback(
+    async (config: BushaPayConfig, choice: PaymentMethod) => {
       if (choice === 'bushaApp') {
         const deepLink = buildBushaAppDeepLink(config);
         if (deepLink && (await canOpenBushaApp(deepLink))) {
@@ -97,23 +94,45 @@ export const BushaPayProvider = ({
 
       openWebSheet(config, 'stablecoins');
     },
-    [chooserConfig, openWebSheet, resolve]
+    [openWebSheet, resolve]
   );
 
-  const checkout = useCallback<CheckoutFn>((config) => {
-    if (inProgressRef.current) {
-      return Promise.resolve({
-        type: 'error',
-        message: 'Another payment is already in progress',
-        code: 'CHECKOUT_IN_PROGRESS',
-      } as const);
-    }
-    inProgressRef.current = true;
-    return new Promise<BushaPayResult>((res) => {
-      resolverRef.current = res;
-      setChooserConfig(config);
-    });
-  }, []);
+  const handleChoice = useCallback(
+    async (choice: PaymentMethod) => {
+      const config = chooserConfig;
+      if (!config) return;
+      await routeChoice(config, choice);
+    },
+    [chooserConfig, routeChoice]
+  );
+
+  const checkout = useCallback<CheckoutFn>(
+    (config) => {
+      if (inProgressRef.current) {
+        return Promise.resolve({
+          type: 'error',
+          message: 'Another payment is already in progress',
+          code: 'CHECKOUT_IN_PROGRESS',
+        } as const);
+      }
+      inProgressRef.current = true;
+      return new Promise<BushaPayResult>((res) => {
+        resolverRef.current = res;
+
+        const allowed = config.allowedPaymentMethods;
+        if (allowed && allowed.length === 1) {
+          const only = allowed[0];
+          if (only) {
+            routeChoice(config, only).catch(() => {});
+            return;
+          }
+        }
+
+        setChooserConfig(config);
+      });
+    },
+    [routeChoice]
+  );
 
   const value = useMemo<ContextValue>(
     () => ({
@@ -132,6 +151,7 @@ export const BushaPayProvider = ({
         <PaymentMethodChooser
           visible
           config={chooserConfig}
+          allowedPaymentMethods={chooserConfig.allowedPaymentMethods}
           onChoose={handleChoice}
           onDismiss={() => {
             setChooserConfig(null);

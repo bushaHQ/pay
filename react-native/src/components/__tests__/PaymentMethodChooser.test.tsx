@@ -146,3 +146,64 @@ describe('PaymentMethodChooser selection', () => {
     expect(onDismiss).toHaveBeenCalled();
   });
 });
+
+describe('PaymentMethodChooser allowedPaymentMethods', () => {
+  test('shows all tiles when allowedPaymentMethods is undefined', () => {
+    render(
+      <PaymentMethodChooser
+        visible
+        config={baseConfig}
+        onChoose={() => {}}
+        onDismiss={() => {}}
+        merchantNameLoader={async () => null}
+      />
+    );
+    expect(screen.getByText('Busha')).toBeTruthy();
+    expect(screen.getByText('Stablecoins')).toBeTruthy();
+  });
+
+  test('shows all tiles when allowedPaymentMethods is empty', () => {
+    render(
+      <PaymentMethodChooser
+        visible
+        config={baseConfig}
+        allowedPaymentMethods={[]}
+        onChoose={() => {}}
+        onDismiss={() => {}}
+        merchantNameLoader={async () => null}
+      />
+    );
+    expect(screen.getByText('Busha')).toBeTruthy();
+    expect(screen.getByText('Stablecoins')).toBeTruthy();
+  });
+
+  test('hides Stablecoins when only bushaApp is allowed', () => {
+    render(
+      <PaymentMethodChooser
+        visible
+        config={baseConfig}
+        allowedPaymentMethods={['bushaApp']}
+        onChoose={() => {}}
+        onDismiss={() => {}}
+        merchantNameLoader={async () => null}
+      />
+    );
+    expect(screen.getByText('Busha')).toBeTruthy();
+    expect(screen.queryByText('Stablecoins')).toBeNull();
+  });
+
+  test('hides Busha when only stablecoins is allowed', () => {
+    render(
+      <PaymentMethodChooser
+        visible
+        config={baseConfig}
+        allowedPaymentMethods={['stablecoins']}
+        onChoose={() => {}}
+        onDismiss={() => {}}
+        merchantNameLoader={async () => null}
+      />
+    );
+    expect(screen.queryByText('Busha')).toBeNull();
+    expect(screen.getByText('Stablecoins')).toBeTruthy();
+  });
+});
