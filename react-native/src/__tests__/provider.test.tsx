@@ -50,16 +50,21 @@ jest
 type HarnessProps = {
   onResult: (r: Result) => void;
   triggerKey?: number;
+  configOverride?: typeof config;
 };
 
-const Harness = ({ onResult, triggerKey = 0 }: HarnessProps) => {
+const Harness = ({
+  onResult,
+  triggerKey = 0,
+  configOverride,
+}: HarnessProps) => {
   const { checkout } = useBushaPay();
   return (
     <View>
       <Pressable
         accessibilityLabel="open"
         onPress={() => {
-          checkout(config).then(onResult);
+          checkout(configOverride ?? config).then(onResult);
         }}
       >
         <Text>open</Text>
@@ -83,10 +88,13 @@ const SecondCheckoutTrigger = ({
   return null;
 };
 
-const renderProvider = (onResult: (r: Result) => void) =>
+const renderProvider = (
+  onResult: (r: Result) => void,
+  configOverride?: typeof config
+) =>
   render(
     <BushaPayProvider publicKey="pub_x">
-      <Harness onResult={onResult} />
+      <Harness onResult={onResult} configOverride={configOverride} />
     </BushaPayProvider>
   );
 
@@ -257,6 +265,91 @@ describe('BushaPayProvider — Busha app flow', () => {
     });
     expect(result).toEqual({ type: 'cancelled' });
     jest.useRealTimers();
+  });
+});
+
+describe('BushaPayProvider — allowedPaymentMethods', () => {
+  test('[stablecoins] skips the chooser and opens the web sheet', async () => {
+    let result: Result | undefined;
+    renderProvider(
+      (r) => {
+        result = r;
+      },
+      { ...config, allowedPaymentMethods: ['stablecoins'] } as typeof config
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('open'));
+    });
+    expect(screen.queryByText('Choose a payment method')).toBeNull();
+    expect(screen.getByLabelText('Loading payment options')).toBeTruthy();
+
+    await act(async () => {
+      BushaPay.handleDeepLink(
+        `${CALLBACK_PREFIX}?status=completed&paymentRequestId=PAYR_S2`
+      );
+    });
+    expect(result).toMatchObject({ type: 'success', paymentId: 'PAYR_S2' });
+  });
+
+  test('[bushaApp] with app installed skips the chooser and deep-links into the app', async () => {
+    mockCanOpenURL.mockImplementation(async () => true);
+    let result: Result | undefined;
+    renderProvider(
+      (r) => {
+        result = r;
+      },
+      { ...config, allowedPaymentMethods: ['bushaApp'] } as typeof config
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('open'));
+    });
+    expect(screen.queryByText('Choose a payment method')).toBeNull();
+    expect(mockOpenURL).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      BushaPay.handleDeepLink(
+        `${CALLBACK_PREFIX}?status=completed&paymentRequestId=PAYR_BA2`
+      );
+    });
+    expect(result).toMatchObject({ type: 'success', paymentId: 'PAYR_BA2' });
+  });
+
+  test('[bushaApp] with app missing falls through to the web sheet', async () => {
+    mockCanOpenURL.mockImplementation(async () => false);
+    let result: Result | undefined;
+    renderProvider(
+      (r) => {
+        result = r;
+      },
+      { ...config, allowedPaymentMethods: ['bushaApp'] } as typeof config
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('open'));
+    });
+    expect(screen.queryByText('Choose a payment method')).toBeNull();
+    expect(mockOpenURL).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Loading payment options')).toBeTruthy();
+
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
+    expect(webViewMock.__injectedScripts[0]).toContain('?paymentMethod=busha');
+
+    await act(async () => {
+      BushaPay.handleDeepLink(
+        `${CALLBACK_PREFIX}?status=completed&paymentRequestId=PAYR_FB`
+      );
+    });
+    expect(result).toMatchObject({ type: 'success', paymentId: 'PAYR_FB' });
+  });
+
+  test('[bushaApp, stablecoins] still shows the chooser', () => {
+    renderProvider(() => {}, {
+      ...config,
+      allowedPaymentMethods: ['bushaApp', 'stablecoins'],
+    } as typeof config);
+    fireEvent.press(screen.getByLabelText('open'));
+    expect(screen.getByText('Choose a payment method')).toBeTruthy();
+    expect(screen.getByText('Busha')).toBeTruthy();
+    expect(screen.getByText('Stablecoins')).toBeTruthy();
   });
 });
 

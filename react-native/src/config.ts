@@ -1,3 +1,6 @@
+import type { PaymentMethod } from './payment-method';
+import { getOrigin } from './url-utils';
+
 export type BushaPayConfig = {
   quoteAmount: string;
   quoteCurrency: string;
@@ -7,9 +10,11 @@ export type BushaPayConfig = {
   metaName?: string;
   metaEmail?: string;
   metaPhone?: string;
+  /**
+   * Restricts which payment methods the chooser offers.
+   */
+  allowedPaymentMethods?: PaymentMethod[];
 };
-
-import { getOrigin } from './url-utils';
 
 export const toFormFields = (
   config: BushaPayConfig,

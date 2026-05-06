@@ -1,5 +1,6 @@
 import 'package:busha_pay/busha_pay_config.dart';
 import 'package:busha_pay/busha_pay_result.dart';
+import 'package:busha_pay/src/payment_method.dart';
 import 'package:busha_pay/src/sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,14 +48,18 @@ class _UrlLauncherFake {
   }
 }
 
-Future<void> _openCheckout(WidgetTester tester, void Function(BushaPayResult) onResult) async {
+Future<void> _openCheckout(
+  WidgetTester tester,
+  void Function(BushaPayResult) onResult, {
+  BushaPayConfig config = _config,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Builder(
         builder: (ctx) => Scaffold(
           body: Center(
             child: ElevatedButton(
-              onPressed: () => BushaPay.checkout(context: ctx, config: _config, onComplete: onResult),
+              onPressed: () => BushaPay.checkout(context: ctx, config: config, onComplete: onResult),
               child: const Text('open'),
             ),
           ),
@@ -236,6 +241,104 @@ void main() {
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),
   );
+
+  testWidgets('allowedPaymentMethods=[stablecoins] skips the chooser and opens the web sheet', (tester) async {
+    const config = BushaPayConfig(
+      quoteAmount: '10000',
+      quoteCurrency: 'NGN',
+      targetCurrency: 'NGN',
+      sourceCurrency: 'USDT',
+      allowedPaymentMethods: [PaymentMethod.stablecoins],
+    );
+    BushaPayResult? result;
+    await _openCheckout(tester, (r) => result = r, config: config);
+
+    expect(find.text('Choose a payment method'), findsNothing);
+    expect(find.bySemanticsLabel('Loading payment options'), findsOneWidget);
+
+    final uri = Uri.parse('$_callbackScheme://callback?status=completed&paymentRequestId=PAYR_SC');
+    expect(BushaPay.handleDeepLink(uri), isTrue);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(result, isA<BushaPaySuccess>());
+  });
+
+  testWidgets(
+    'allowedPaymentMethods=[bushaApp] skips the chooser and deep-links into the Busha app',
+    (tester) async {
+      urlLauncher.canLaunchAnswer = true;
+      const config = BushaPayConfig(
+        quoteAmount: '10000',
+        quoteCurrency: 'NGN',
+        targetCurrency: 'NGN',
+        sourceCurrency: 'USDT',
+        allowedPaymentMethods: [PaymentMethod.bushaApp],
+      );
+      BushaPayResult? result;
+      await _openCheckout(tester, (r) => result = r, config: config);
+
+      expect(find.text('Choose a payment method'), findsNothing);
+      expect(urlLauncher.launched, hasLength(1));
+
+      final uri = Uri.parse('$_callbackScheme://callback?status=completed&paymentRequestId=PAYR_APP');
+      expect(BushaPay.handleDeepLink(uri), isTrue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(result, isA<BushaPaySuccess>());
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'allowedPaymentMethods=[bushaApp] with app not installed falls through to the web sheet',
+    (tester) async {
+      urlLauncher.canLaunchAnswer = false;
+      const config = BushaPayConfig(
+        quoteAmount: '10000',
+        quoteCurrency: 'NGN',
+        targetCurrency: 'NGN',
+        sourceCurrency: 'USDT',
+        allowedPaymentMethods: [PaymentMethod.bushaApp],
+      );
+      BushaPayResult? result;
+      await _openCheckout(tester, (r) => result = r, config: config);
+
+      expect(find.text('Choose a payment method'), findsNothing);
+      expect(urlLauncher.launched, isEmpty);
+      expect(find.bySemanticsLabel('Loading payment options'), findsOneWidget);
+
+      final uri = Uri.parse('$_callbackScheme://callback?status=completed&paymentRequestId=PAYR_FB');
+      expect(BushaPay.handleDeepLink(uri), isTrue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(result, isA<BushaPaySuccess>());
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets('allowedPaymentMethods with both methods still shows the chooser', (tester) async {
+    const config = BushaPayConfig(
+      quoteAmount: '10000',
+      quoteCurrency: 'NGN',
+      targetCurrency: 'NGN',
+      sourceCurrency: 'USDT',
+      allowedPaymentMethods: [PaymentMethod.bushaApp, PaymentMethod.stablecoins],
+    );
+    BushaPayResult? result;
+    await _openCheckout(tester, (r) => result = r, config: config);
+
+    expect(find.text('Choose a payment method'), findsOneWidget);
+    expect(find.text('Busha'), findsOneWidget);
+    expect(find.text('Stablecoins'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(result, isA<BushaPayCancelled>());
+  });
 
   testWidgets('a second checkout while the first is in flight returns CHECKOUT_IN_PROGRESS', (tester) async {
     BushaPayResult? second;

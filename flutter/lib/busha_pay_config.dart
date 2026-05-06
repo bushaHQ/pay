@@ -1,3 +1,5 @@
+import 'src/payment_method.dart';
+
 /// Configuration for a Busha Pay checkout session.
 class BushaPayConfig {
   /// Amount to charge (e.g., '10000').
@@ -24,6 +26,13 @@ class BushaPayConfig {
   /// Customer phone number.
   final String? metaPhone;
 
+  /// Restricts which payment methods the chooser offers.
+  ///
+  /// - `null` or empty → show the full chooser (default).
+  /// - One method → skip the chooser and route straight to that method.
+  /// - Multiple methods → show the chooser with only those tiles.
+  final List<PaymentMethod>? allowedPaymentMethods;
+
   const BushaPayConfig({
     required this.quoteAmount,
     required this.quoteCurrency,
@@ -33,6 +42,7 @@ class BushaPayConfig {
     this.metaName,
     this.metaEmail,
     this.metaPhone,
+    this.allowedPaymentMethods,
   });
 
   /// Creates a copy with the given fields replaced.
@@ -45,6 +55,7 @@ class BushaPayConfig {
     String? metaName,
     String? metaEmail,
     String? metaPhone,
+    List<PaymentMethod>? allowedPaymentMethods,
   }) => BushaPayConfig(
     quoteAmount: quoteAmount ?? this.quoteAmount,
     quoteCurrency: quoteCurrency ?? this.quoteCurrency,
@@ -54,6 +65,7 @@ class BushaPayConfig {
     metaName: metaName ?? this.metaName,
     metaEmail: metaEmail ?? this.metaEmail,
     metaPhone: metaPhone ?? this.metaPhone,
+    allowedPaymentMethods: allowedPaymentMethods ?? this.allowedPaymentMethods,
   );
 
   /// Converts to the JSON shape expected by commerce-js.

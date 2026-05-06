@@ -311,6 +311,30 @@ When payment completes via the **Busha app**, only `paymentId` and `status` are 
 | `metaName` | `String?` | No | Customer name |
 | `metaEmail` | `String?` | No | Customer email |
 | `metaPhone` | `String?` | No | Customer phone |
+| `allowedPaymentMethods` | `List<PaymentMethod>?` | No | Restricts which payment methods the chooser offers. See [Restricting payment methods](#restricting-payment-methods). |
+
+## Restricting payment methods
+
+By default, checkout shows a chooser with two tiles: **Busha** and **Stablecoins**. If you only support one of them — or want to skip the chooser for a particular flow — pass `allowedPaymentMethods` on `BushaPayConfig`:
+
+```dart
+BushaPayConfig(
+  quoteAmount: '10000',
+  quoteCurrency: 'NGN',
+  targetCurrency: 'NGN',
+  sourceCurrency: 'USDT',
+  // Skip the chooser and route directly to the Busha app
+  // (with web fallback if it isn't installed).
+  allowedPaymentMethods: [PaymentMethod.bushaApp],
+);
+```
+
+| `allowedPaymentMethods` | Behavior |
+|---|---|
+| `null` (default) or `[]` | Show the full chooser. |
+| `[PaymentMethod.bushaApp]` | Skip the chooser; deep-link into the Busha app, falling through to the web checkout if the app isn't installed. |
+| `[PaymentMethod.stablecoins]` | Skip the chooser; open the web checkout directly. |
+| Multiple methods | Show the chooser with only those tiles. |
 
 ## Find Your Public Key
 

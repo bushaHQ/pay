@@ -4,16 +4,19 @@ import { SvgXml } from 'react-native-svg';
 
 import type { BushaPayConfig } from '../config';
 import { fetchMerchantName } from '../merchant-api';
+import type { PaymentMethod } from '../payment-method';
 import { BushaPay } from '../sdk';
 import { BUSHA_LOGO_SVG, BUSHA_SVG, WALLET_OUTLINE_SVG } from '../svg-icons';
 
-export type PaymentChoice = 'bushaApp' | 'stablecoins';
+export type { PaymentMethod };
 
 type Props = {
   visible: boolean;
   config: BushaPayConfig;
-  onChoose: (choice: PaymentChoice) => void;
+  onChoose: (choice: PaymentMethod) => void;
   onDismiss: () => void;
+  /** Methods to render as tiles. `null`/undefined or empty shows everything. */
+  allowedPaymentMethods?: PaymentMethod[];
   merchantNameLoader?: () => Promise<string | null>;
 };
 
@@ -32,8 +35,13 @@ export const PaymentMethodChooser = ({
   config,
   onChoose,
   onDismiss,
+  allowedPaymentMethods,
   merchantNameLoader,
 }: Props) => {
+  const methodAllowed = (m: PaymentMethod): boolean =>
+    !allowedPaymentMethods ||
+    allowedPaymentMethods.length === 0 ||
+    allowedPaymentMethods.includes(m);
   const [merchantName, setMerchantName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,19 +87,25 @@ export const PaymentMethodChooser = ({
             <View style={styles.gap32} />
             <Text style={styles.heading}>Choose a payment method</Text>
             <View style={styles.gap12} />
-            <PaymentMethodTile
-              name="Busha"
-              description="Make payment directly from your busha account"
-              iconXml={BUSHA_SVG}
-              onPress={() => onChoose('bushaApp')}
-            />
-            <View style={styles.gap16} />
-            <PaymentMethodTile
-              name="Stablecoins"
-              description="Make payment from an external wallet"
-              iconXml={WALLET_OUTLINE_SVG}
-              onPress={() => onChoose('stablecoins')}
-            />
+            {methodAllowed('bushaApp') && (
+              <PaymentMethodTile
+                name="Busha"
+                description="Make payment directly from your busha account"
+                iconXml={BUSHA_SVG}
+                onPress={() => onChoose('bushaApp')}
+              />
+            )}
+            {methodAllowed('bushaApp') && methodAllowed('stablecoins') && (
+              <View style={styles.gap16} />
+            )}
+            {methodAllowed('stablecoins') && (
+              <PaymentMethodTile
+                name="Stablecoins"
+                description="Make payment from an external wallet"
+                iconXml={WALLET_OUTLINE_SVG}
+                onPress={() => onChoose('stablecoins')}
+              />
+            )}
             <View style={styles.gap32} />
             <SecuredByFooter />
           </View>
