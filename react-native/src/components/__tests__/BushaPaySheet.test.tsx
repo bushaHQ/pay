@@ -70,7 +70,7 @@ describe('BushaPaySheet — WebView lifecycle', () => {
         onResult={() => {}}
       />
     );
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
     expect(webViewMock.__injectedScripts.length).toBe(1);
     const script = webViewMock.__injectedScripts[0];
     expect(script).toContain('initCheckout(');
@@ -89,7 +89,7 @@ describe('BushaPaySheet — WebView lifecycle', () => {
         onResult={() => {}}
       />
     );
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
     expect(webViewMock.__injectedScripts[0]).toContain(
       '?paymentMethod=stablecoins'
     );
@@ -104,8 +104,8 @@ describe('BushaPaySheet — WebView lifecycle', () => {
         onResult={() => {}}
       />
     );
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
     expect(webViewMock.__injectedScripts.length).toBe(2);
     expect(webViewMock.__injectedScripts[1]).toContain('var target = "Busha"');
   });
@@ -119,8 +119,8 @@ describe('BushaPaySheet — WebView lifecycle', () => {
         onResult={() => {}}
       />
     );
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
-    act(() => webViewMock.__lastWebView!.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
+    act(() => webViewMock.__lastWebView?.fireLoadEnd());
     expect(webViewMock.__injectedScripts.length).toBe(1);
   });
 });
@@ -136,7 +136,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(JSON.stringify({ type: 'ready' }))
+      webViewMock.__lastWebView?.emitMessage(JSON.stringify({ type: 'ready' }))
     );
     expect(screen.queryByLabelText('Loading payment options')).toBeNull();
   });
@@ -152,7 +152,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
+      webViewMock.__lastWebView?.emitMessage(
         JSON.stringify({
           type: 'success',
           data: { data: { id: 'PAYR_S', status: 'completed' } },
@@ -178,7 +178,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(JSON.stringify({ type: 'close' }))
+      webViewMock.__lastWebView?.emitMessage(JSON.stringify({ type: 'close' }))
     );
     expect(onResult).toHaveBeenCalledWith({ type: 'cancelled' });
   });
@@ -194,7 +194,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
+      webViewMock.__lastWebView?.emitMessage(
         JSON.stringify({
           type: 'error',
           data: { message: 'boom', code: 'E_BOOM' },
@@ -219,10 +219,10 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(JSON.stringify({ type: 'close' }))
+      webViewMock.__lastWebView?.emitMessage(JSON.stringify({ type: 'close' }))
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
+      webViewMock.__lastWebView?.emitMessage(
         JSON.stringify({ type: 'success', data: {} })
       )
     );
@@ -240,7 +240,7 @@ describe('BushaPaySheet — bridge messages', () => {
         onResult={onResult}
       />
     );
-    act(() => webViewMock.__lastWebView!.emitMessage('not json {'));
+    act(() => webViewMock.__lastWebView?.emitMessage('not json {'));
     expect(onResult).not.toHaveBeenCalled();
   });
 
@@ -255,7 +255,7 @@ describe('BushaPaySheet — bridge messages', () => {
       />
     );
     act(() =>
-      webViewMock.__lastWebView!.emitMessage(
+      webViewMock.__lastWebView?.emitMessage(
         JSON.stringify({ type: 'mystery', data: {} })
       )
     );
@@ -274,10 +274,10 @@ describe('BushaPaySheet — onShouldStartLoadWithRequest', () => {
       />
     );
     expect(
-      webViewMock.__lastWebView!.shouldStartLoad('https://pay.busha.co/pay')
+      webViewMock.__lastWebView?.shouldStartLoad('https://pay.busha.co/pay')
     ).toBe(true);
     expect(
-      webViewMock.__lastWebView!.shouldStartLoad('http://example.com/x')
+      webViewMock.__lastWebView?.shouldStartLoad('http://example.com/x')
     ).toBe(true);
   });
 
@@ -291,7 +291,7 @@ describe('BushaPaySheet — onShouldStartLoadWithRequest', () => {
       />
     );
     expect(
-      webViewMock.__lastWebView!.shouldStartLoad(
+      webViewMock.__lastWebView?.shouldStartLoad(
         'co.busha.apple://busha.co/pay'
       )
     ).toBe(false);
@@ -307,7 +307,7 @@ describe('BushaPaySheet — onShouldStartLoadWithRequest', () => {
         onResult={() => {}}
       />
     );
-    expect(webViewMock.__lastWebView!.shouldStartLoad('garbage')).toBe(true);
+    expect(webViewMock.__lastWebView?.shouldStartLoad('garbage')).toBe(true);
   });
 });
 
@@ -344,6 +344,194 @@ describe('BushaPaySheet — deep-link forwarding', () => {
     );
     BushaPay.handleDeepLink('https://example.com/foo');
     expect(onResult).not.toHaveBeenCalled();
+  });
+});
+
+describe('WebView load-error handling', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('main-frame onError delivers WEBVIEW_LOAD_ERROR', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.fireError(
+        'https://pay.busha.co/payment-method',
+        'No internet'
+      )
+    );
+    expect(onResult).toHaveBeenCalledWith({
+      type: 'error',
+      message: 'Could not load checkout (No internet)',
+      code: 'WEBVIEW_LOAD_ERROR',
+    });
+  });
+
+  test('sub-resource onError is ignored', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.fireError(
+        'https://cdn.example.com/font.woff2',
+        '404'
+      )
+    );
+    expect(onResult).not.toHaveBeenCalled();
+  });
+
+  test('main-frame onHttpError delivers WEBVIEW_HTTP_ERROR with status', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.fireHttpError(
+        'https://pay.busha.co/payment-method',
+        503
+      )
+    );
+    expect(onResult).toHaveBeenCalledWith({
+      type: 'error',
+      message: 'Checkout failed (HTTP 503)',
+      code: 'WEBVIEW_HTTP_ERROR',
+    });
+  });
+
+  test('main-frame HTTP error with status 0 falls back to WEBVIEW_LOAD_ERROR', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.fireHttpError(
+        'https://pay.busha.co/payment-method',
+        0
+      )
+    );
+    expect(onResult).toHaveBeenCalledWith({
+      type: 'error',
+      message: 'Could not load checkout',
+      code: 'WEBVIEW_LOAD_ERROR',
+    });
+  });
+
+  test('sub-resource onHttpError is ignored', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.fireHttpError(
+        'https://cdn.example.com/font.woff2',
+        404
+      )
+    );
+    expect(onResult).not.toHaveBeenCalled();
+  });
+
+  test('bootstrap timeout fires WEBVIEW_TIMEOUT when bridge never ready', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() => {
+      jest.advanceTimersByTime(31_000);
+    });
+    expect(onResult).toHaveBeenCalledWith({
+      type: 'error',
+      message: 'Checkout timed out before loading',
+      code: 'WEBVIEW_TIMEOUT',
+    });
+  });
+
+  test('ready message cancels the bootstrap timeout', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.emitMessage(JSON.stringify({ type: 'ready' }))
+    );
+    act(() => {
+      jest.advanceTimersByTime(31_000);
+    });
+    expect(onResult).not.toHaveBeenCalled();
+  });
+
+  test('only the first error delivers a result (dedupe with bridge errors)', () => {
+    const onResult = jest.fn();
+    render(
+      <BushaPaySheet
+        visible
+        config={config}
+        autoSelect="none"
+        onResult={onResult}
+      />
+    );
+    act(() =>
+      webViewMock.__lastWebView?.fireError(
+        'https://pay.busha.co/payment-method',
+        'No internet'
+      )
+    );
+    act(() =>
+      webViewMock.__lastWebView?.emitMessage(
+        JSON.stringify({
+          type: 'error',
+          data: { message: 'late', code: 'LATE_ERR' },
+        })
+      )
+    );
+    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(onResult.mock.calls[0]?.[0]).toEqual({
+      type: 'error',
+      message: 'Could not load checkout (No internet)',
+      code: 'WEBVIEW_LOAD_ERROR',
+    });
   });
 });
 

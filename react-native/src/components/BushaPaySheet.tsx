@@ -43,6 +43,8 @@ type Props = {
 
 const WEB_SCHEMES = new Set(['http', 'https', 'about', 'data', 'blob']);
 
+const BOOTSTRAP_TIMEOUT_MS = 30_000;
+
 export const BushaPaySheet = ({
   visible,
   config,
@@ -53,10 +55,15 @@ export const BushaPaySheet = ({
   const [initialized, setInitialized] = useState(false);
   const resultDeliveredRef = useRef(false);
   const formSubmittedRef = useRef(false);
+  const bootstrapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const deliverResult = (result: BushaPayResult): void => {
     if (resultDeliveredRef.current) return;
     resultDeliveredRef.current = true;
+    if (bootstrapTimerRef.current) {
+      clearTimeout(bootstrapTimerRef.current);
+      bootstrapTimerRef.current = null;
+    }
     onResult(result);
   };
 
@@ -69,6 +76,20 @@ export const BushaPaySheet = ({
     [checkoutUrl]
   );
 
+  // Sub-resource failures (analytics, fonts, third-party iframes) come
+  // through onError/onHttpError too. Filter to the main checkout host
+  // so we don't tear down the whole flow on a benign 404.
+  const checkoutHost = useMemo(
+    () => parseUrl(checkoutUrl)?.host ?? '',
+    [checkoutUrl]
+  );
+
+  const isMainFrameUrl = (url: string | undefined | null): boolean => {
+    if (!url) return false;
+    const parsed = parseUrl(url);
+    return !!parsed && !!checkoutHost && parsed.host === checkoutHost;
+  };
+
   useEffect(() => {
     if (!visible) return;
     registerCallbackHandler((url) => {
@@ -77,8 +98,19 @@ export const BushaPaySheet = ({
       else if (result.type === 'cancelled') deliverResult(result);
       else deliverResult(result);
     });
+    bootstrapTimerRef.current = setTimeout(() => {
+      bootstrapTimerRef.current = null;
+      if (resultDeliveredRef.current) return;
+      deliverResult(
+        errorResult('Checkout timed out before loading', 'WEBVIEW_TIMEOUT')
+      );
+    }, BOOTSTRAP_TIMEOUT_MS);
     return () => {
       registerCallbackHandler(null);
+      if (bootstrapTimerRef.current) {
+        clearTimeout(bootstrapTimerRef.current);
+        bootstrapTimerRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -106,6 +138,10 @@ export const BushaPaySheet = ({
       };
       switch (payload.type) {
         case 'ready':
+          if (bootstrapTimerRef.current) {
+            clearTimeout(bootstrapTimerRef.current);
+            bootstrapTimerRef.current = null;
+          }
           setInitialized(true);
           return;
         case 'success':
@@ -158,6 +194,31 @@ export const BushaPaySheet = ({
     }
   };
 
+  const handleError: NonNullable<WebViewProps['onError']> = (event) => {
+    const { url, description } = event.nativeEvent;
+    if (!isMainFrameUrl(url)) return;
+    deliverResult(
+      errorResult(
+        `Could not load checkout (${description ?? 'unknown error'})`,
+        'WEBVIEW_LOAD_ERROR'
+      )
+    );
+  };
+
+  const handleHttpError: NonNullable<WebViewProps['onHttpError']> = (event) => {
+    const { url, statusCode } = event.nativeEvent;
+    if (!isMainFrameUrl(url)) return;
+    if (!statusCode) {
+      deliverResult(
+        errorResult('Could not load checkout', 'WEBVIEW_LOAD_ERROR')
+      );
+      return;
+    }
+    deliverResult(
+      errorResult(`Checkout failed (HTTP ${statusCode})`, 'WEBVIEW_HTTP_ERROR')
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -188,6 +249,8 @@ export const BushaPaySheet = ({
               onMessage={handleMessage}
               onShouldStartLoadWithRequest={handleShouldStartLoad}
               onLoadEnd={handleLoadEnd}
+              onError={handleError}
+              onHttpError={handleHttpError}
               style={styles.webview}
             />
             {!initialized && (
