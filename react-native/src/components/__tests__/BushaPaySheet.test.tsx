@@ -374,7 +374,7 @@ describe('WebView load-error handling', () => {
     );
     expect(onResult).toHaveBeenCalledWith({
       type: 'error',
-      message: 'Could not load checkout: No internet',
+      message: 'Could not load checkout (No internet)',
       code: 'WEBVIEW_LOAD_ERROR',
     });
   });
@@ -529,7 +529,7 @@ describe('WebView load-error handling', () => {
     expect(onResult).toHaveBeenCalledTimes(1);
     expect(onResult.mock.calls[0]?.[0]).toEqual({
       type: 'error',
-      message: 'Could not load checkout: No internet',
+      message: 'Could not load checkout (No internet)',
       code: 'WEBVIEW_LOAD_ERROR',
     });
   });

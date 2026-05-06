@@ -285,6 +285,20 @@ When payment completes via the **Busha app**, only `paymentId` and `status` are 
 
 **Always verify the payment server-side via webhooks.** The client result is a UX hint, not the source of truth.
 
+### Common error codes
+
+`BushaPayError.message` is **diagnostic** — useful for logs and support tickets but not safe to surface to end users verbatim. Branch on `BushaPayError.code` for UX decisions and craft your own user-facing copy:
+
+| Code | Meaning |
+|------|---------|
+| `CHECKOUT_IN_PROGRESS` | A previous `BushaPay.checkout()` call hasn't resolved yet |
+| `WEBVIEW_LOAD_ERROR` | Network failure, DNS error, or other platform-level load failure |
+| `WEBVIEW_HTTP_ERROR` | Non-2xx HTTP response from the checkout endpoint |
+| `WEBVIEW_TIMEOUT` | Checkout page didn't bootstrap within 30 seconds |
+| `HTML_LOAD_ERROR` | The bundled checkout HTML asset failed to load |
+
+`code` is also populated when the error originates from a Busha-app deep-link callback or from the checkout page itself — in those cases it carries whatever code the upstream system reported. Treat unknown codes as generic errors.
+
 ## Configuration
 
 | Parameter | Type | Required | Description |

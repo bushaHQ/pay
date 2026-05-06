@@ -79,8 +79,8 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
       if (mounted) {
         setState(() => _htmlContent = html);
       }
-    } catch (e) {
-      _deliverResult(BushaPayError(message: 'Failed to load checkout page: $e', code: 'HTML_LOAD_ERROR'));
+    } catch (_) {
+      _deliverResult(const BushaPayError(message: 'Failed to load the bundled checkout page', code: 'HTML_LOAD_ERROR'));
     }
   }
 
@@ -140,7 +140,7 @@ class _BushaPaySheetState extends State<BushaPaySheet> with WidgetsBindingObserv
     // shouldn't tear down the whole checkout. Only main-frame errors
     // are fatal.
     if (request.isForMainFrame != true) return;
-    _deliverResult(BushaPayError(message: 'Could not load checkout: $description', code: 'WEBVIEW_LOAD_ERROR'));
+    _deliverResult(BushaPayError(message: 'Could not load checkout ($description)', code: 'WEBVIEW_LOAD_ERROR'));
   }
 
   void _onWebViewHttpError(WebResourceRequest request, int statusCode) {

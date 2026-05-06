@@ -199,7 +199,7 @@ export const BushaPaySheet = ({
     if (!isMainFrameUrl(url)) return;
     deliverResult(
       errorResult(
-        `Could not load checkout: ${description ?? 'unknown error'}`,
+        `Could not load checkout (${description ?? 'unknown error'})`,
         'WEBVIEW_LOAD_ERROR'
       )
     );
