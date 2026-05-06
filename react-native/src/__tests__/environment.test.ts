@@ -12,11 +12,11 @@ afterEach(() => {
 
 describe('getCheckoutUrl', () => {
   test('returns the live checkout URL by default', () => {
-    expect(getCheckoutUrl('live')).toBe('https://pay.busha.co/pay');
+    expect(getCheckoutUrl('live')).toBe('https://pay.busha.io/pay');
   });
 
   test('returns the staging checkout URL for sandbox', () => {
-    expect(getCheckoutUrl('sandbox')).toBe('https://staging.pay.busha.co/pay');
+    expect(getCheckoutUrl('sandbox')).toBe('https://staging.pay.busha.io/pay');
   });
 });
 

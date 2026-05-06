@@ -221,7 +221,7 @@ void main() {
     final controller = _MockController();
 
     final webAction = _MockNavigationAction();
-    when(() => webAction.request).thenReturn(URLRequest(url: WebUri('https://pay.busha.co/foo')));
+    when(() => webAction.request).thenReturn(URLRequest(url: WebUri('https://pay.busha.io/foo')));
     final webPolicy = await params?.shouldOverrideUrlLoading?.call(controller, webAction);
     expect(webPolicy, NavigationActionPolicy.ALLOW);
 

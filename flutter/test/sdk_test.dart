@@ -38,14 +38,14 @@ void main() {
     test('defaults to live environment', () async {
       await BushaPay.init(publicKey: 'pub_x');
       expect(BushaPay.isDevMode, isFalse);
-      expect(BushaPay.checkoutUrl, 'https://pay.busha.co/pay');
+      expect(BushaPay.checkoutUrl, 'https://pay.busha.io/pay');
       expect(BushaPay.platformUrl, 'https://api.busha.io');
     });
 
     test('respects sandbox environment', () async {
       await BushaPay.init(publicKey: 'pub_sb', environment: BushaEnvironment.sandbox);
       expect(BushaPay.isDevMode, isTrue);
-      expect(BushaPay.checkoutUrl, 'https://staging.pay.busha.co/pay');
+      expect(BushaPay.checkoutUrl, 'https://staging.pay.busha.io/pay');
       expect(BushaPay.platformUrl, 'https://api.sandbox.busha.so');
     });
 

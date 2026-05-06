@@ -68,7 +68,7 @@ describe('init', () => {
     BushaPay.init({ publicKey: 'pub_x' });
     expect(BushaPay.environment).toBe('live');
     expect(BushaPay.isDevMode).toBe(false);
-    expect(BushaPay.checkoutUrl).toBe('https://pay.busha.co/pay');
+    expect(BushaPay.checkoutUrl).toBe('https://pay.busha.io/pay');
     expect(BushaPay.platformUrl).toBe('https://api.busha.io');
   });
 
@@ -76,7 +76,7 @@ describe('init', () => {
     const { BushaPay } = loadSdk();
     BushaPay.init({ publicKey: 'pub_sb', environment: 'sandbox' });
     expect(BushaPay.isDevMode).toBe(true);
-    expect(BushaPay.checkoutUrl).toBe('https://staging.pay.busha.co/pay');
+    expect(BushaPay.checkoutUrl).toBe('https://staging.pay.busha.io/pay');
     expect(BushaPay.platformUrl).toBe('https://api.sandbox.busha.so');
   });
 

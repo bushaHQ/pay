@@ -94,9 +94,9 @@ void main() {
       final fields = baseConfig.toFormFields(
         publicKey: 'pk',
         callbackUrl: 'cb://cb',
-        checkoutUrl: 'https://pay.busha.co/pay',
+        checkoutUrl: 'https://pay.busha.io/pay',
       );
-      expect(fields['parentOrigin'], 'https://pay.busha.co');
+      expect(fields['parentOrigin'], 'https://pay.busha.io');
     });
 
     test('uses INLINE display mode', () {
@@ -108,7 +108,7 @@ void main() {
       final fields = baseConfig.toFormFields(
         publicKey: 'pk',
         callbackUrl: 'cb',
-        checkoutUrl: 'https://pay.busha.co/pay',
+        checkoutUrl: 'https://pay.busha.io/pay',
       );
       expect(fields.containsKey('reference'), isFalse);
       expect(fields.containsKey('meta[name]'), isFalse);

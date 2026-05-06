@@ -64,7 +64,7 @@ class BushaPay {
   static bool get isDevMode => _environment == BushaEnvironment.sandbox;
 
   /// The checkout page URL for the current environment.
-  static String get checkoutUrl => isDevMode ? 'https://staging.pay.busha.co/pay' : 'https://pay.busha.co/pay';
+  static String get checkoutUrl => isDevMode ? 'https://staging.pay.busha.io/pay' : 'https://pay.busha.io/pay';
 
   /// The Busha platform API base URL for the current environment.
   static String get platformUrl => isDevMode ? 'https://api.sandbox.busha.so' : 'https://api.busha.io';

@@ -77,7 +77,7 @@ describe('BushaPaySheet — WebView lifecycle', () => {
     expect(script).toContain('"public_key":"pub_x"');
     expect(script).toContain('"quote_amount":"10000"');
     expect(script).toContain('"_checkoutUrl"');
-    expect(script).toContain('https://pay.busha.co/pay');
+    expect(script).toContain('https://pay.busha.io/pay');
   });
 
   test('autoSelect=stablecoins appends ?paymentMethod=stablecoins to the form action', () => {
@@ -274,7 +274,7 @@ describe('BushaPaySheet — onShouldStartLoadWithRequest', () => {
       />
     );
     expect(
-      webViewMock.__lastWebView?.shouldStartLoad('https://pay.busha.co/pay')
+      webViewMock.__lastWebView?.shouldStartLoad('https://pay.busha.io/pay')
     ).toBe(true);
     expect(
       webViewMock.__lastWebView?.shouldStartLoad('http://example.com/x')
@@ -368,7 +368,7 @@ describe('WebView load-error handling', () => {
     );
     act(() =>
       webViewMock.__lastWebView?.fireError(
-        'https://pay.busha.co/payment-method',
+        'https://pay.busha.io/payment-method',
         'No internet'
       )
     );
@@ -410,7 +410,7 @@ describe('WebView load-error handling', () => {
     );
     act(() =>
       webViewMock.__lastWebView?.fireHttpError(
-        'https://pay.busha.co/payment-method',
+        'https://pay.busha.io/payment-method',
         503
       )
     );
@@ -433,7 +433,7 @@ describe('WebView load-error handling', () => {
     );
     act(() =>
       webViewMock.__lastWebView?.fireHttpError(
-        'https://pay.busha.co/payment-method',
+        'https://pay.busha.io/payment-method',
         0
       )
     );
@@ -514,7 +514,7 @@ describe('WebView load-error handling', () => {
     );
     act(() =>
       webViewMock.__lastWebView?.fireError(
-        'https://pay.busha.co/payment-method',
+        'https://pay.busha.io/payment-method',
         'No internet'
       )
     );
