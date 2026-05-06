@@ -44,89 +44,79 @@ class _PaymentMethodChooserState extends State<PaymentMethodChooser> {
     });
   }
 
+  bool _shows(PaymentMethod method) {
+    final allowed = widget.allowedPaymentMethods;
+    return allowed == null || allowed.isEmpty || allowed.contains(method);
+  }
+
   @override
-  Widget build(BuildContext context) => Dialog(
-    backgroundColor: _kContainmentPrimary,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+  Widget build(BuildContext context) {
+    final showsBusha = _shows(PaymentMethod.bushaApp);
+    final showsStablecoins = _shows(PaymentMethod.stablecoins);
+
+    return Dialog(
+      backgroundColor: _kContainmentPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pay ${_formatAmount(widget.config.quoteAmount)} ${widget.config.quoteCurrency}',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2, color: _kTextHigh),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Icon(Icons.close, color: _kTextHigh),
+                    ),
+                  ],
+                ),
+                if (_merchantName case final merchant?) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    'Pay ${_formatAmount(widget.config.quoteAmount)} ${widget.config.quoteCurrency}',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2, color: _kTextHigh),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Icons.close, color: _kTextHigh),
+                    'To $merchant',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: _kTextMid),
                   ),
                 ],
-              ),
-              if (_merchantName case final merchant?) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'To $merchant',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: _kTextMid),
+                const SizedBox(height: 32),
+                const Text(
+                  'Choose a payment method',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: _kTextHigh),
                 ),
+                const SizedBox(height: 12),
+                if (showsBusha)
+                  _PaymentMethodTile(
+                    name: 'Busha',
+                    description: 'Make payment directly from your busha account',
+                    iconAssetPath: 'assets/icons/busha.svg',
+                    onTap: () => Navigator.of(context).pop(PaymentMethod.bushaApp),
+                  ),
+                if (showsBusha && showsStablecoins) const SizedBox(height: 16),
+                if (showsStablecoins)
+                  _PaymentMethodTile(
+                    name: 'Stablecoins',
+                    description: 'Make payment from an external wallet',
+                    iconAssetPath: 'assets/icons/wallet-outline.svg',
+                    onTap: () => Navigator.of(context).pop(PaymentMethod.stablecoins),
+                  ),
+                const SizedBox(height: 32),
+                const _SecuredByFooter(),
               ],
-              const SizedBox(height: 32),
-              const Text(
-                'Choose a payment method',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: _kTextHigh),
-              ),
-              const SizedBox(height: 12),
-              ..._buildTiles(context),
-              const SizedBox(height: 32),
-              const _SecuredByFooter(),
-            ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-
-  List<Widget> _buildTiles(BuildContext context) {
-    final allowed = widget.allowedPaymentMethods;
-    final tiles = <Widget>[];
-
-    void add(PaymentMethod method, _PaymentMethodTile tile) {
-      if (allowed != null && allowed.isNotEmpty && !allowed.contains(method)) {
-        return;
-      }
-      if (tiles.isNotEmpty) tiles.add(const SizedBox(height: 16));
-      tiles.add(tile);
-    }
-
-    add(
-      PaymentMethod.bushaApp,
-      _PaymentMethodTile(
-        name: 'Busha',
-        description: 'Make payment directly from your busha account',
-        iconAssetPath: 'assets/icons/busha.svg',
-        onTap: () => Navigator.of(context).pop(PaymentMethod.bushaApp),
+        ],
       ),
     );
-    add(
-      PaymentMethod.stablecoins,
-      _PaymentMethodTile(
-        name: 'Stablecoins',
-        description: 'Make payment from an external wallet',
-        iconAssetPath: 'assets/icons/wallet-outline.svg',
-        onTap: () => Navigator.of(context).pop(PaymentMethod.stablecoins),
-      ),
-    );
-
-    return tiles;
   }
 
   static String _formatAmount(String amount) {
