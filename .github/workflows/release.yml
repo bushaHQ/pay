@@ -161,18 +161,6 @@ jobs:
         run: echo "Android SDK not yet implemented — skipping build."
       # TODO: When implemented, bump version → build → commit → package zip → upload artifact.
 
-  build-ios:
-    name: Build iOS
-    needs: version
-    if: inputs.sdk == 'ios' || inputs.sdk == 'all'
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Placeholder
-        run: echo "iOS SDK not yet implemented — skipping build."
-      # TODO: When implemented, bump version → swift build → commit → package zip → upload artifact.
-
   build-react-native:
     name: Build React Native
     needs: version
@@ -225,13 +213,12 @@ jobs:
 
   commit-bumps:
     name: Commit version bumps + CHANGELOG
-    needs: [version, build-flutter, build-android, build-ios, build-react-native]
+    needs: [version, build-flutter, build-android, build-react-native]
     if: |
       always() &&
       needs.version.result == 'success' &&
       needs.build-flutter.result != 'failure' && needs.build-flutter.result != 'cancelled' &&
       needs.build-android.result != 'failure' && needs.build-android.result != 'cancelled' &&
-      needs.build-ios.result != 'failure' && needs.build-ios.result != 'cancelled' &&
       needs.build-react-native.result != 'failure' && needs.build-react-native.result != 'cancelled'
     runs-on: ubuntu-latest
     steps:
@@ -447,7 +434,7 @@ jobs:
         run: |
           set -euo pipefail
           cd ios
-          git init -q -b main
+          git init -q -b dev
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .
@@ -457,7 +444,7 @@ jobs:
             echo "Tag v${VERSION} already exists on bushaHQ/pay-ios — skipping."
             exit 0
           fi
-          git push --force mirror main
+          git push --force mirror dev
           git tag "v${VERSION}"
           git push mirror "v${VERSION}"
           echo "Mirrored bushaHQ/pay-ios @ v${VERSION}"
