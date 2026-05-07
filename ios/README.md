@@ -1,5 +1,8 @@
 # Busha Pay iOS SDK
 
+[![CI](https://github.com/bushaHQ/pay/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/bushaHQ/pay/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/bushaHQ/pay/dev/ios/coverage-badge.json)
+
 Official iOS (Swift Package) SDK for accepting crypto payments via Busha.
 
 ## Requirements
