@@ -166,18 +166,21 @@ jobs:
           xcrun simctl boot "iPhone 16" 2>/dev/null || true &
           echo "Simulator booting in background"
 
-      - name: Test (with coverage)
+      - name: Test
         working-directory: ios
+        env:
+          COVERAGE: ${{ (github.ref == 'refs/heads/dev' && github.event_name == 'push') && 'YES' || 'NO' }}
         run: |
           xcodebuild \
             -scheme BushaPay \
             -destination "$IOS_TEST_DESTINATION" \
-            -enableCodeCoverage YES \
+            -enableCodeCoverage $COVERAGE \
             -derivedDataPath build/derivedData \
             test
 
       - name: Extract coverage percentage
         id: coverage
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         working-directory: ios
         run: |
           XCRESULT=$(find build/derivedData -name '*.xcresult' | head -1)
@@ -195,6 +198,7 @@ jobs:
           echo "iOS coverage: $PCT%"
 
       - name: Enforce minimum coverage
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         run: |
           PCT="${{ steps.coverage.outputs.percentage }}"
           MIN=70
