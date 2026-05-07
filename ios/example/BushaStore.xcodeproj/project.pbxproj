@@ -1,0 +1,368 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03946846E51258DAF7106C89 /* ProductDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42DFC2FADEE09C42E956427D /* ProductDetailView.swift */; };
+		118DC2314CCAF44C6ED89974 /* Product.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D66AEE45DFD695663B4A40B /* Product.swift */; };
+		19554A5FB7337E7DB6F62668 /* BushaStoreApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84133F0EA256CED86D7FEDEE /* BushaStoreApp.swift */; };
+		2F96C192C1B7683F6ED31964 /* ReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F1B50081AA436353AA2271 /* ReceiptView.swift */; };
+		30C71D2EB69543CF35DB2DE8 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A895EDB252C34CC8621FB701 /* HomeView.swift */; };
+		68722C75B23C1C87F01C1425 /* BushaPay in Frameworks */ = {isa = PBXBuildFile; productRef = AE1F03DB19651760B0CE56F0 /* BushaPay */; };
+		A7701B7D2A88E410310C8411 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5ECFA3F7B027AFCBA26B3FD6 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0A2B8B84EA60774C35762994 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		32B8BC5FF3FC0FFAB580D8C8 /* BushaStore.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BushaStore.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		42DFC2FADEE09C42E956427D /* ProductDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailView.swift; sourceTree = "<group>"; };
+		4D66AEE45DFD695663B4A40B /* Product.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Product.swift; sourceTree = "<group>"; };
+		5ECFA3F7B027AFCBA26B3FD6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		70A8BB3071C5E0876413DEA6 /* ios */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ios; path = ..; sourceTree = SOURCE_ROOT; };
+		84133F0EA256CED86D7FEDEE /* BushaStoreApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BushaStoreApp.swift; sourceTree = "<group>"; };
+		A895EDB252C34CC8621FB701 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		B1F1B50081AA436353AA2271 /* ReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1AA14BEF65178A27B869D8E1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68722C75B23C1C87F01C1425 /* BushaPay in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0F994B869EFDE670F5E582B1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				32B8BC5FF3FC0FFAB580D8C8 /* BushaStore.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		388E1298A4BD6150DC2E4E65 = {
+			isa = PBXGroup;
+			children = (
+				39AC0107D36FADF78CD94C7B /* BushaStore */,
+				F620EB31B9CA839A6ABCF7FA /* Packages */,
+				0F994B869EFDE670F5E582B1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		39AC0107D36FADF78CD94C7B /* BushaStore */ = {
+			isa = PBXGroup;
+			children = (
+				5ECFA3F7B027AFCBA26B3FD6 /* Assets.xcassets */,
+				84133F0EA256CED86D7FEDEE /* BushaStoreApp.swift */,
+				A895EDB252C34CC8621FB701 /* HomeView.swift */,
+				0A2B8B84EA60774C35762994 /* Info.plist */,
+				4D66AEE45DFD695663B4A40B /* Product.swift */,
+				42DFC2FADEE09C42E956427D /* ProductDetailView.swift */,
+				B1F1B50081AA436353AA2271 /* ReceiptView.swift */,
+			);
+			path = BushaStore;
+			sourceTree = "<group>";
+		};
+		F620EB31B9CA839A6ABCF7FA /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				70A8BB3071C5E0876413DEA6 /* ios */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FC54E903E0A35A11168A7D16 /* BushaStore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 85C01A927C433DB97B0B109E /* Build configuration list for PBXNativeTarget "BushaStore" */;
+			buildPhases = (
+				6263EFE51D2652D8BCAFB5E6 /* Sources */,
+				845050C4C7D7797C7B9109D0 /* Resources */,
+				1AA14BEF65178A27B869D8E1 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BushaStore;
+			packageProductDependencies = (
+				AE1F03DB19651760B0CE56F0 /* BushaPay */,
+			);
+			productName = BushaStore;
+			productReference = 32B8BC5FF3FC0FFAB580D8C8 /* BushaStore.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FAA84790205B28B76881F2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					FC54E903E0A35A11168A7D16 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F23F1B31E4EC46FEF3E12C18 /* Build configuration list for PBXProject "BushaStore" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 388E1298A4BD6150DC2E4E65;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C103FCD55D390B5C958EF4AE /* XCLocalSwiftPackageReference ".." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0F994B869EFDE670F5E582B1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FC54E903E0A35A11168A7D16 /* BushaStore */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		845050C4C7D7797C7B9109D0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A7701B7D2A88E410310C8411 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6263EFE51D2652D8BCAFB5E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				19554A5FB7337E7DB6F62668 /* BushaStoreApp.swift in Sources */,
+				30C71D2EB69543CF35DB2DE8 /* HomeView.swift in Sources */,
+				118DC2314CCAF44C6ED89974 /* Product.swift in Sources */,
+				03946846E51258DAF7106C89 /* ProductDetailView.swift in Sources */,
+				2F96C192C1B7683F6ED31964 /* ReceiptView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2E5A8CF335654E208AC6B269 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = BushaStore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = co.busha.example.store;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4470E2CB2F8A29DEA1D26070 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = BushaStore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = co.busha.example.store;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B188D29E8D9CA789C50E4730 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		B1C7BD52B0475D962BD519B5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		85C01A927C433DB97B0B109E /* Build configuration list for PBXNativeTarget "BushaStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E5A8CF335654E208AC6B269 /* Debug */,
+				4470E2CB2F8A29DEA1D26070 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F23F1B31E4EC46FEF3E12C18 /* Build configuration list for PBXProject "BushaStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B188D29E8D9CA789C50E4730 /* Debug */,
+				B1C7BD52B0475D962BD519B5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C103FCD55D390B5C958EF4AE /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AE1F03DB19651760B0CE56F0 /* BushaPay */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BushaPay;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 08FAA84790205B28B76881F2 /* Project object */;
+}
