@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -90,9 +92,17 @@ class BushaPay {
   ///   runApp(const MyApp());
   /// }
   /// ```
-  static Future<void> init({required String publicKey, BushaEnvironment environment = BushaEnvironment.live}) async {
+  static Future<void> init({
+    required String publicKey,
+    BushaEnvironment environment = BushaEnvironment.live,
+    bool enableDebugLogs = kDebugMode,
+  }) async {
     _publicKey = publicKey;
     _environment = environment;
+
+    if (!enableDebugLogs) {
+      PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
+    }
 
     final packageInfo = await PackageInfo.fromPlatform();
     _packageName = packageInfo.packageName;
