@@ -132,24 +132,39 @@ jobs:
     permissions:
       contents: write
     env:
-      IOS_BUILD_DESTINATION: generic/platform=iOS Simulator
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=latest
     steps:
       - uses: actions/checkout@v6
 
+      - name: Cache homebrew
+        id: brew-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /opt/homebrew/Cellar/librsvg
+            /opt/homebrew/opt/librsvg
+            /opt/homebrew/bin/rsvg-convert
+          key: ${{ runner.os }}-brew-librsvg-v1
+
       - name: Install librsvg (rsvg-convert for SVG → PDF in make sync-ios)
+        if: steps.brew-cache.outputs.cache-hit != 'true'
         run: brew install librsvg
 
       - name: Sync shared assets
         run: make sync-ios
 
-      - name: Build
-        working-directory: ios
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ios/build/derivedData
+          key: ${{ runner.os }}-xcode-${{ hashFiles('ios/Sources/**/*.swift', 'ios/Tests/**/*.swift', 'ios/Package.swift', 'ios/Sources/BushaPay/Resources/**') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-
+
+      - name: Pre-boot simulator
         run: |
-          xcodebuild \
-            -scheme BushaPay \
-            -destination "$IOS_BUILD_DESTINATION" \
-            build
+          xcrun simctl boot "iPhone 16" 2>/dev/null || true &
+          echo "Simulator booting in background"
 
       - name: Test (with coverage)
         working-directory: ios
