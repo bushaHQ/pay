@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// SwiftUI body of the chooser. Hosted via `UIHostingController` from
-/// ``ChooserPresenter``.
 struct ChooserView: View {
     let config: BushaPayConfig
     let merchantName: String?

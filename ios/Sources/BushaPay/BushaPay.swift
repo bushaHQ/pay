@@ -21,11 +21,9 @@ import UIKit
 ///     switch result { ... }
 /// }
 /// ```
-/// Public surface is `@MainActor`-isolated: the SDK presents view
-/// controllers and mutates static state during a checkout, so every entry
-/// point — including ``handleDeepLink(_:)`` from your `onOpenURL` /
-/// `application(_:open:options:)` hook — must be called on the main
-/// thread. This is enforced at compile time.
+///
+/// Every entry point — including ``handleDeepLink(_:)`` — must be called
+/// on the main thread. The compiler enforces this via `@MainActor`.
 @MainActor
 public enum BushaPay {
     private static var _publicKey: String?
@@ -35,52 +33,38 @@ public enum BushaPay {
     private static var _directLaunchHandler: ((URL) -> Void)?
     private static var _pendingCallbackHandler: ((URL) -> Void)?
 
-    /// Bundle override for testing — production reads `Bundle.module`.
     static var resourceBundleOverride: Bundle?
-    /// Bundle override for the merchant app's bundle identifier.
     static var bundleIdOverride: String?
 
-    // MARK: - Public state
-
-    /// Whether the SDK has been initialized.
     public static var isInitialized: Bool { _publicKey != nil }
-
-    /// Whether a checkout is currently in progress.
     public static var isCheckoutInProgress: Bool { _isCheckoutInProgress }
 
-    /// The configured public key.
     public static var publicKey: String {
         precondition(_publicKey != nil, "BushaPay.initialize() must be called first")
         return _publicKey!
     }
 
-    /// Whether the SDK is in dev/sandbox mode.
     public static var isDevMode: Bool { _environment == .sandbox }
 
-    /// The checkout page URL for the current environment.
     public static var checkoutUrl: String {
         isDevMode ? "https://staging.pay.busha.io/pay" : "https://pay.busha.io/pay"
     }
 
-    /// The Busha platform API base URL for the current environment.
     public static var platformUrl: String {
         isDevMode ? "https://api.sandbox.busha.so" : "https://api.busha.io"
     }
 
-    /// The callback URL scheme for this app, derived from the bundle ID.
+    /// The callback URL scheme this app receives Busha Pay callbacks on.
+    /// Derived as `<bundle-id>.busha-pay`.
     public static var callbackScheme: String {
         let bundleId = bundleIdOverride ?? _bundleId ?? Bundle.main.bundleIdentifier ?? "app"
         return "\(bundleId).busha-pay"
     }
 
-    /// The full callback URL for this app (e.g. `com.example.app.busha-pay://callback`).
     public static var callbackUrl: String { "\(callbackScheme)://callback" }
 
-    // MARK: - Initialization
-
-    /// Initialize the Busha Pay SDK.
-    ///
-    /// Call once at app startup, e.g. in `application(_:didFinishLaunchingWithOptions:)`.
+    /// Initialize the SDK. Call once at app startup before any
+    /// ``checkout(config:from:onComplete:)`` invocation.
     public static func initialize(
         publicKey: String,
         environment: BushaEnvironment = .live
@@ -90,9 +74,8 @@ public enum BushaPay {
         _bundleId = Bundle.main.bundleIdentifier
     }
 
-    /// Launches the Busha Pay checkout flow.
-    ///
-    /// `onComplete` is called exactly once on the main thread.
+    /// Launches the Busha Pay checkout flow. `onComplete` is called
+    /// exactly once on the main thread.
     public static func checkout(
         config: BushaPayConfig,
         from presenter: UIViewController,
@@ -112,10 +95,8 @@ public enum BushaPay {
         }
     }
 
-    /// Async/await variant. Returns the result; never throws — failures
-    /// are surfaced as ``BushaPayResult/error(_:)``. The completion-based
-    /// overload already dispatches its result on the main queue, so this
-    /// just wraps it in a continuation.
+    /// Async overload. Failures surface as ``BushaPayResult/error(_:)`` —
+    /// never throws.
     public static func checkout(
         config: BushaPayConfig,
         from presenter: UIViewController
@@ -127,11 +108,9 @@ public enum BushaPay {
         }
     }
 
-    /// Forwards a deep-link URL to the SDK. Returns `true` if the URL was a
-    /// Busha Pay callback the SDK consumed.
-    ///
-    /// Wire this into your app's URL handler (`UIApplicationDelegate
-    /// .application(_:open:options:)` or `UIWindowSceneDelegate.scene(_:openURLContexts:)`).
+    /// Forwards a URL to the SDK. Returns `true` if the URL was a Busha
+    /// Pay callback the SDK consumed. Wire into your app's URL handler
+    /// (`onOpenURL`, `application(_:open:options:)`, or `scene(_:openURLContexts:)`).
     @discardableResult
     public static func handleDeepLink(_ url: URL) -> Bool {
         guard
@@ -187,7 +166,6 @@ public enum BushaPay {
         let allowed = config.allowedPaymentMethods
 
         if let allowed, allowed.count == 1, let only = allowed.first {
-            // Single allowed method — skip the chooser.
             DispatchQueue.main.async {
                 routeAfterChoice(method: only, config: config, from: presenter, completion: completion)
             }
@@ -231,7 +209,13 @@ public enum BushaPay {
         presentSheet(config: config, autoSelect: auto, from: presenter, completion: completion)
     }
 
-    private static func launchBushaApp(_ url: URL, completion: @escaping (BushaPayResult) -> Void) {
+    static var resumeCancelDelay: TimeInterval = 1.5
+
+    static var urlLauncher: (URL, @escaping (Bool) -> Void) -> Void = { url, completion in
+        UIApplication.shared.open(url, options: [:], completionHandler: completion)
+    }
+
+    static func launchBushaApp(_ url: URL, completion: @escaping (BushaPayResult) -> Void) {
         var didFinish = false
         let resumeNotification = UIApplication.didBecomeActiveNotification
         var observer: NSObjectProtocol?
@@ -246,15 +230,16 @@ public enum BushaPay {
 
         _directLaunchHandler = { url in finish(parseCallback(url)) }
 
+        // Resume without a matching callback inside the grace window
+        // means the user came back without paying.
+        let delay = resumeCancelDelay
         observer = NotificationCenter.default.addObserver(forName: resumeNotification, object: nil, queue: .main) { _ in
-            // If the merchant app resumes and no callback arrives within
-            // 1.5s, treat it as the user backing out of the Busha app.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 if !didFinish { finish(.cancelled) }
             }
         }
 
-        UIApplication.shared.open(url, options: [:]) { opened in
+        urlLauncher(url) { opened in
             if !opened {
                 finish(.error(BushaPayError(message: "Could not open the Busha app", code: "BUSHA_APP_LAUNCH_FAILED")))
             }
@@ -269,11 +254,9 @@ public enum BushaPay {
     ) {
         let bundle = resourceBundleOverride ?? Bundle.module
 
-        // Wrap completion so every terminal path — bridge events, swipe
-        // dismiss, timeout, error, or a deep-link callback — also tears
-        // down the pending-callback handler. Otherwise it stays bound to
-        // a dismissed sheet and a later (stale) callback would land on
-        // dead state.
+        // Every terminal path tears down the pending-callback handler;
+        // skipping this would leave a closure bound to a dismissed sheet
+        // that a later (stale) callback could fire into.
         var didFire = false
         let wrappedCompletion: (BushaPayResult) -> Void = { result in
             guard !didFire else { return }
@@ -296,8 +279,8 @@ public enum BushaPay {
                 wrappedCompletion(parseCallback(url))
             }
         }
+        // Present from the topmost VC — the chooser may still be on screen.
         let presentOn: UIViewController = {
-            // The chooser may still be on screen — present from the top.
             var top = presenter
             while let presented = top.presentedViewController { top = presented }
             return top
@@ -316,5 +299,9 @@ public enum BushaPay {
         _pendingCallbackHandler = nil
         resourceBundleOverride = nil
         bundleIdOverride = nil
+        resumeCancelDelay = 1.5
+        urlLauncher = { url, completion in
+            UIApplication.shared.open(url, options: [:], completionHandler: completion)
+        }
     }
 }

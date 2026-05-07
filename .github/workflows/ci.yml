@@ -182,7 +182,7 @@ jobs:
       - name: Enforce minimum coverage
         run: |
           PCT="${{ steps.coverage.outputs.percentage }}"
-          MIN=50
+          MIN=70
           if (( $(echo "$PCT < $MIN" | bc -l) )); then
             echo "iOS coverage $PCT% is below minimum $MIN%"
             exit 1

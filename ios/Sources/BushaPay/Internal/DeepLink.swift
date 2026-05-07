@@ -1,7 +1,6 @@
 import Foundation
 
 enum DeepLink {
-    /// Returns the Busha app's URL scheme for `env` on iOS.
     static func bushaAppScheme(_ env: BushaEnvironment) -> String {
         switch env {
         case .sandbox:
@@ -11,10 +10,6 @@ enum DeepLink {
         }
     }
 
-    /// Builds the Busha app deep link.
-    ///
-    /// `reference` is included only when set, mirroring the Flutter and RN
-    /// SDKs' shape.
     static func buildBushaAppDeepLink(
         scheme: String,
         config: BushaPayConfig,
@@ -40,7 +35,6 @@ enum DeepLink {
     }
 }
 
-/// URI schemes that should stay inside the WebView.
 let kWebSchemes: Set<String> = ["http", "https", "about", "data", "blob"]
 
 func isWebScheme(_ scheme: String) -> Bool {

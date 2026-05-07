@@ -1,12 +1,8 @@
 import Foundation
 
-/// A parsed message from the WebView bridge.
 enum BridgeMessage {
-    /// Finished bootstrapping the iframe — hide the shimmer.
     case ready
-    /// Reported a terminal outcome (success, cancellation, error).
     case result(BushaPayResult)
-    /// Unparseable JSON, missing `type`, or an unknown `type` value.
     case unknown
 }
 

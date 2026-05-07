@@ -98,11 +98,9 @@ final class BushaPayTests: XCTestCase {
     }
 
     func testHandleDeepLinkReturnsTrueWithoutPendingHandler() {
+        // The SDK consumes the URL even when no listener is registered —
+        // returning false would suggest the merchant should handle it.
         BushaPay.initialize(publicKey: "pub_x")
-        // No handler registered — the SDK still owns the URL (consumed it)
-        // even if there's no listener. Returning false here would suggest
-        // the merchant should handle the URL themselves, which would be
-        // wrong.
         let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled")!
         XCTAssertTrue(BushaPay.handleDeepLink(url))
     }
@@ -138,8 +136,7 @@ final class BushaPayTests: XCTestCase {
         XCTAssertFalse(BushaPay.isInitialized)
         XCTAssertFalse(BushaPay.isCheckoutInProgress)
         XCTAssertFalse(BushaPay.isDevMode, "environment should reset to .live")
-        // The handler was cleared — re-registering against a new closure
-        // should be the only thing receiving subsequent callbacks.
+
         var fired = false
         BushaPay.bundleIdOverride = "co.example.testapp"
         BushaPay.initialize(publicKey: "pub_y")

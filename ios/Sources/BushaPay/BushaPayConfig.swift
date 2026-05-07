@@ -55,7 +55,6 @@ public struct BushaPayConfig: Sendable {
         self.allowedPaymentMethods = allowedPaymentMethods
     }
 
-    /// Form fields for the WebView checkout's hidden POST.
     func toFormFields(
         publicKey: String,
         callbackUrl: String,
@@ -82,8 +81,7 @@ public struct BushaPayConfig: Sendable {
 }
 
 private extension URL {
-    /// `scheme://host[:port]` — matches `URL.origin` semantics from the
-    /// other SDKs (Flutter `Uri.origin`, JS `URL.origin`).
+    /// Mirrors JS `URL.origin` / Flutter `Uri.origin`: `scheme://host[:port]`.
     var origin: String? {
         guard let scheme, let host else { return nil }
         if let port {
