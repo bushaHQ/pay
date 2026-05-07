@@ -54,7 +54,7 @@ public enum BushaPay {
 
     /// The checkout page URL for the current environment.
     public static var checkoutUrl: String {
-        isDevMode ? "https://staging.pay.busha.co/pay" : "https://pay.busha.co/pay"
+        isDevMode ? "https://staging.pay.busha.io/pay" : "https://pay.busha.io/pay"
     }
 
     /// The Busha platform API base URL for the current environment.
@@ -108,16 +108,16 @@ public enum BushaPay {
     }
 
     /// Async/await variant. Returns the result; never throws — failures
-    /// are surfaced as ``BushaPayResult/error(_:)``.
+    /// are surfaced as ``BushaPayResult/error(_:)``. The completion-based
+    /// overload already dispatches its result on the main queue, so this
+    /// just wraps it in a continuation.
     public static func checkout(
         config: BushaPayConfig,
         from presenter: UIViewController
     ) async -> BushaPayResult {
         await withCheckedContinuation { continuation in
-            Task { @MainActor in
-                checkout(config: config, from: presenter) { result in
-                    continuation.resume(returning: result)
-                }
+            checkout(config: config, from: presenter) { result in
+                continuation.resume(returning: result)
             }
         }
     }
@@ -263,6 +263,20 @@ public enum BushaPay {
         completion: @escaping (BushaPayResult) -> Void
     ) {
         let bundle = resourceBundleOverride ?? Bundle.module
+
+        // Wrap completion so every terminal path — bridge events, swipe
+        // dismiss, timeout, error, or a deep-link callback — also tears
+        // down the pending-callback handler. Otherwise it stays bound to
+        // a dismissed sheet and a later (stale) callback would land on
+        // dead state.
+        var didFire = false
+        let wrappedCompletion: (BushaPayResult) -> Void = { result in
+            guard !didFire else { return }
+            didFire = true
+            unregisterCallbackHandler()
+            completion(result)
+        }
+
         let sheet = CheckoutSheetViewController(
             config: config,
             publicKey: publicKey,
@@ -270,12 +284,11 @@ public enum BushaPay {
             checkoutUrl: checkoutUrl,
             autoSelect: autoSelect,
             resourceBundle: bundle,
-            completion: completion
+            completion: wrappedCompletion
         )
         registerCallbackHandler { url in
             sheet.dismiss(animated: true) {
-                unregisterCallbackHandler()
-                completion(parseCallback(url))
+                wrappedCompletion(parseCallback(url))
             }
         }
         let presentOn: UIViewController = {

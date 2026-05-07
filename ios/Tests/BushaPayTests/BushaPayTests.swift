@@ -23,14 +23,14 @@ final class BushaPayTests: XCTestCase {
 
     func testEnvironmentUrlsLive() {
         BushaPay.initialize(publicKey: "pub_x", environment: .live)
-        XCTAssertEqual(BushaPay.checkoutUrl, "https://pay.busha.co/pay")
+        XCTAssertEqual(BushaPay.checkoutUrl, "https://pay.busha.io/pay")
         XCTAssertEqual(BushaPay.platformUrl, "https://api.busha.io")
         XCTAssertFalse(BushaPay.isDevMode)
     }
 
     func testEnvironmentUrlsSandbox() {
         BushaPay.initialize(publicKey: "pub_x", environment: .sandbox)
-        XCTAssertEqual(BushaPay.checkoutUrl, "https://staging.pay.busha.co/pay")
+        XCTAssertEqual(BushaPay.checkoutUrl, "https://staging.pay.busha.io/pay")
         XCTAssertEqual(BushaPay.platformUrl, "https://api.sandbox.busha.so")
         XCTAssertTrue(BushaPay.isDevMode)
     }

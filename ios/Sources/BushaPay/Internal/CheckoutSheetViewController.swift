@@ -24,7 +24,7 @@ enum AutoSelect {
 
 /// Hosts a `WKWebView` running the bundled bridge HTML. Handles:
 /// - Form bootstrap with the provided config and keys
-final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate {
+final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate, UIAdaptivePresentationControllerDelegate {
     private static let bootstrapTimeout: TimeInterval = 30
 
     private let config: BushaPayConfig
@@ -72,6 +72,9 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        // Listen for user-driven swipe-down dismissal so the merchant's
+        // completion fires with `.cancelled` instead of hanging.
+        presentationController?.delegate = self
 
         let configuration = WKWebViewConfiguration()
         let userContent = configuration.userContentController
@@ -277,5 +280,16 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         } else {
             cb(result)
         }
+    }
+
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        // User swiped the page sheet down. The view has already been
+        // dismissed by the time we get here — call completion directly
+        // without trying to dismiss again.
+        guard !didDeliverResult else { return }
+        didDeliverResult = true
+        bootstrapTimer?.invalidate()
+        bootstrapTimer = nil
+        completion(.cancelled)
     }
 }
