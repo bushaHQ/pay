@@ -1,0 +1,65 @@
+name: BushaStore
+options:
+  bundleIdPrefix: co.busha.example
+  deploymentTarget:
+    iOS: "14.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGNING_ALLOWED: NO
+
+packages:
+  BushaPay:
+    path: ".."
+
+targets:
+  BushaStore:
+    type: application
+    platform: iOS
+    sources:
+      - BushaStore
+    info:
+      path: BushaStore/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: en
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        # Public key surfaced from a user-defined build setting. Set it
+        # locally via a .xcconfig or `xcodebuild BUSHA_PUBLIC_KEY=pub_xxx`.
+        BushaPublicKey: $(BUSHA_PUBLIC_KEY)
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSupportsIndirectInputEvents: true
+        # Register the SDK callback URL scheme — must match $(PRODUCT_BUNDLE_IDENTIFIER).busha-pay
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER).busha-pay
+            CFBundleURLSchemes:
+              - $(PRODUCT_BUNDLE_IDENTIFIER).busha-pay
+        # Allow `UIApplication.canOpenURL` against the Busha app's schemes
+        LSApplicationQueriesSchemes:
+          - co.busha.apple
+          - co.busha.boro.development
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: co.busha.example.store
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_FILE: BushaStore/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_PREVIEWS: YES
+    dependencies:
+      - package: BushaPay
+        product: BushaPay

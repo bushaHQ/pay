@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Xcode build outputs
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Xcode per-user state (UI layout, breakpoints, scheme overrides) — must
+# never be committed; the shared scheme + project structure is enough.
+xcuserdata/
+*.xcuserstate
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+*.xccheckout
+
+# SwiftPM caches (resolved at fetch time, not part of source)
+.build/
+.swiftpm/
+Package.resolved

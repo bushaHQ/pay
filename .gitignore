@@ -25,10 +25,6 @@ android/**/.gradle/
 android/local.properties
 android/.cxx/
 
-ios/.build/
-ios/.swiftpm/
-ios/DerivedData/
-
 react-native/node_modules/
 react-native/dist/
 react-native/coverage/
