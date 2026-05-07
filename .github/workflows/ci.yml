@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, dev]
+    branches: [dev]
   pull_request:
-    branches: [master, dev]
+    branches: [dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -67,7 +67,7 @@ jobs:
           cache: true
 
       - name: Sync shared assets
-        run: make sync
+        run: make sync-flutter
         working-directory: ${{ github.workspace }}
 
       - run: flutter pub get
@@ -129,9 +129,90 @@ jobs:
     needs: changes
     if: needs.changes.outputs.ios == 'true'
     runs-on: macos-latest
+    permissions:
+      contents: write
+    env:
+      IOS_BUILD_DESTINATION: generic/platform=iOS Simulator
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=latest
     steps:
-      - uses: actions/checkout@v4
-      - run: echo "iOS SDK not yet implemented — skipping."
+      - uses: actions/checkout@v6
+
+      - name: Install librsvg (rsvg-convert for SVG → PDF in make sync-ios)
+        run: brew install librsvg
+
+      - name: Sync shared assets
+        run: make sync-ios
+
+      - name: Build
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -scheme BushaPay \
+            -destination "$IOS_BUILD_DESTINATION" \
+            build
+
+      - name: Test (with coverage)
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -scheme BushaPay \
+            -destination "$IOS_TEST_DESTINATION" \
+            -enableCodeCoverage YES \
+            -derivedDataPath build/derivedData \
+            test
+
+      - name: Extract coverage percentage
+        id: coverage
+        working-directory: ios
+        run: |
+          XCRESULT=$(find build/derivedData -name '*.xcresult' | head -1)
+          if [ -z "$XCRESULT" ]; then
+            echo "No .xcresult bundle found under build/derivedData" >&2
+            exit 1
+          fi
+          # Pull the BushaPay product target's line coverage. We match the
+          # target name exactly so the BushaPayTests bundle doesn't inflate
+          # the number.
+          PCT=$(xcrun xccov view --report --json "$XCRESULT" \
+            | jq -r '.targets[] | select(.name == "BushaPay") | .lineCoverage * 100' \
+            | xargs printf '%.2f')
+          echo "percentage=$PCT" >> "$GITHUB_OUTPUT"
+          echo "iOS coverage: $PCT%"
+
+      - name: Enforce minimum coverage
+        run: |
+          PCT="${{ steps.coverage.outputs.percentage }}"
+          MIN=50
+          if (( $(echo "$PCT < $MIN" | bc -l) )); then
+            echo "iOS coverage $PCT% is below minimum $MIN%"
+            exit 1
+          fi
+          echo "iOS coverage $PCT% meets minimum $MIN%"
+
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        run: |
+          PCT="${{ steps.coverage.outputs.percentage }}"
+          if (( $(echo "$PCT >= 90" | bc -l) )); then
+            COLOR="brightgreen"
+          elif (( $(echo "$PCT >= 75" | bc -l) )); then
+            COLOR="green"
+          elif (( $(echo "$PCT >= 60" | bc -l) )); then
+            COLOR="yellow"
+          else
+            COLOR="red"
+          fi
+          printf '{"schemaVersion":1,"label":"ios coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > ios/coverage-badge.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ios/coverage-badge.json
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: update ios coverage badge [skip ci]"
+            git stash --include-untracked || true
+            git pull --rebase
+            git stash pop || true
+            git push
+          fi
 
   react-native:
     name: React Native
@@ -157,7 +238,7 @@ jobs:
 
       - name: Sync shared HTML
         working-directory: ${{ github.workspace }}
-        run: make sync
+        run: make sync-rn
 
       - name: Restore dependencies
         id: yarn-cache
