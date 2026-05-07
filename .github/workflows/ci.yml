@@ -180,12 +180,9 @@ jobs:
           echo "iOS coverage: $PCT%"
 
       - name: Enforce minimum coverage
-        # The bar is 20% for now — the SDK ships SwiftUI/WKWebView controllers
-        # that aren't covered by the current pure-Swift unit tests. Ratchet
-        # this up as UI tests are added.
         run: |
           PCT="${{ steps.coverage.outputs.percentage }}"
-          MIN=20
+          MIN=50
           if (( $(echo "$PCT < $MIN" | bc -l) )); then
             echo "iOS coverage $PCT% is below minimum $MIN%"
             exit 1

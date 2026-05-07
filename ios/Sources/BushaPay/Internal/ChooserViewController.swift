@@ -11,7 +11,7 @@ final class ChooserViewController: UIViewController {
     private let merchantNameLoader: () async -> String?
     private let completion: (PaymentMethod?) -> Void
 
-    private var didComplete = false
+    private(set) var didComplete = false
     private var hostingController: UIHostingController<AnyView>?
 
     init(
@@ -51,13 +51,19 @@ final class ChooserViewController: UIViewController {
         }
     }
 
-    @objc private func handleBackdropTap() { resolve(with: nil) }
+    @objc func handleBackdropTap() { resolve(with: nil) }
 
-    private func resolve(with method: PaymentMethod?) {
+    /// Resolves the chooser. Internal so tests can drive it directly
+    /// without simulating a backdrop tap or SwiftUI button press.
+    func resolve(with method: PaymentMethod?) {
         guard !didComplete else { return }
         didComplete = true
         let cb = completion
-        dismiss(animated: true) { cb(method) }
+        if presentingViewController != nil {
+            dismiss(animated: true) { cb(method) }
+        } else {
+            cb(method)
+        }
     }
 
     private func renderHosting(merchantName: String?) {

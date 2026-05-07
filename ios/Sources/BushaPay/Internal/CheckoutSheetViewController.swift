@@ -22,10 +22,14 @@ enum AutoSelect {
     }
 }
 
-/// Hosts a `WKWebView` running the bundled bridge HTML. Handles:
-/// - Form bootstrap with the provided config and keys
+/// Hosts a `WKWebView` running the bundled bridge HTML. The dispatch
+/// methods (`processBridgePayload`, `handleNavigationError`,
+/// `handleHttpStatusForMainFrame`) are split out from the
+/// `WKNavigationDelegate` / `WKScriptMessageHandler` glue so tests can
+/// drive them without constructing a real `WKScriptMessage` /
+/// `WKNavigation` (both `final`, no public init).
 final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate, UIAdaptivePresentationControllerDelegate {
-    private static let bootstrapTimeout: TimeInterval = 30
+    static let defaultBootstrapTimeout: TimeInterval = 30
 
     private let config: BushaPayConfig
     private let publicKey: String
@@ -33,14 +37,16 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     private let checkoutUrl: String
     private let autoSelect: AutoSelect
     private let resourceBundle: Bundle
+    private let bootstrapTimeout: TimeInterval
+    private let skipWebViewSetup: Bool
     private let completion: (BushaPayResult) -> Void
 
     private var webView: WKWebView!
     private var loadingView: UIView?
-    private var didDeliverResult = false
+    private(set) var didDeliverResult = false
     private var formSubmitted = false
-    private var checkoutInitialized = false
-    private var bootstrapTimer: Timer?
+    private(set) var checkoutInitialized = false
+    private(set) var bootstrapTimer: Timer?
 
     init(
         config: BushaPayConfig,
@@ -49,6 +55,8 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         checkoutUrl: String,
         autoSelect: AutoSelect,
         resourceBundle: Bundle,
+        bootstrapTimeout: TimeInterval = CheckoutSheetViewController.defaultBootstrapTimeout,
+        skipWebViewSetup: Bool = false,
         completion: @escaping (BushaPayResult) -> Void
     ) {
         self.config = config
@@ -57,6 +65,8 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         self.checkoutUrl = checkoutUrl
         self.autoSelect = autoSelect
         self.resourceBundle = resourceBundle
+        self.bootstrapTimeout = bootstrapTimeout
+        self.skipWebViewSetup = skipWebViewSetup
         self.completion = completion
         super.init(nibName: nil, bundle: nil)
         self.modalPresentationStyle = .pageSheet
@@ -76,6 +86,22 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         // completion fires with `.cancelled` instead of hanging.
         presentationController?.delegate = self
 
+        if !skipWebViewSetup {
+            setupWebView()
+            addLoadingOverlay()
+            loadHtml()
+        }
+
+        bootstrapTimer = Timer.scheduledTimer(withTimeInterval: bootstrapTimeout, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            if self.didDeliverResult || self.checkoutInitialized { return }
+            self.deliver(
+                .error(BushaPayError(message: "Checkout timed out before loading", code: "WEBVIEW_TIMEOUT"))
+            )
+        }
+    }
+
+    private func setupWebView() {
         let configuration = WKWebViewConfiguration()
         let userContent = configuration.userContentController
         userContent.add(self, name: "BushaPayBridge")
@@ -105,16 +131,6 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-
-        addLoadingOverlay()
-        loadHtml()
-        bootstrapTimer = Timer.scheduledTimer(withTimeInterval: Self.bootstrapTimeout, repeats: false) { [weak self] _ in
-            guard let self else { return }
-            if self.didDeliverResult || self.checkoutInitialized { return }
-            self.deliver(
-                .error(BushaPayError(message: "Checkout timed out before loading", code: "WEBVIEW_TIMEOUT"))
-            )
-        }
     }
 
     private func addLoadingOverlay() {
@@ -148,9 +164,22 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         webView.loadHTMLString(html, baseURL: URL(string: checkoutUrl))
     }
 
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "BushaPayBridge", !didDeliverResult else { return }
-        let raw = "\(message.body)"
+    /// Decides what to do with a navigation URL — testable in isolation.
+    enum NavigationDecision: Equatable {
+        case allow
+        case openExternal(URL)
+    }
+
+    func decideNavigation(for url: URL?) -> NavigationDecision {
+        guard let url, let scheme = url.scheme else { return .allow }
+        if isWebScheme(scheme) { return .allow }
+        return .openExternal(url)
+    }
+
+    /// Drives the bridge from a raw JSON string. Tests call this directly
+    /// so we don't need to fabricate a `WKScriptMessage`.
+    func processBridgePayload(_ raw: String) {
+        guard !didDeliverResult else { return }
         switch parseBridgeMessage(raw) {
         case .ready:
             bootstrapTimer?.invalidate()
@@ -164,6 +193,35 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         case .unknown:
             break
         }
+    }
+
+    /// Maps a navigation error onto the result. Tests pass an `NSError`
+    /// directly without going through `WKNavigation`.
+    func handleNavigationError(_ error: Error) {
+        guard isMainFrameError(error) else { return }
+        deliver(
+            .error(BushaPayError(
+                message: "Could not load checkout (\(error.localizedDescription))",
+                code: "WEBVIEW_LOAD_ERROR"
+            ))
+        )
+    }
+
+    /// Maps an HTTP status code onto the result for main-frame responses.
+    /// Returns the policy the delegate should report.
+    func handleHttpStatusForMainFrame(_ statusCode: Int) -> WKNavigationResponsePolicy {
+        if (200..<300).contains(statusCode) || statusCode == 0 {
+            return .allow
+        }
+        deliver(
+            .error(BushaPayError(message: "Checkout failed (HTTP \(statusCode))", code: "WEBVIEW_HTTP_ERROR"))
+        )
+        return .cancel
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "BushaPayBridge" else { return }
+        processBridgePayload("\(message.body)")
     }
 
     private func hideLoadingOverlay() {
@@ -187,32 +245,21 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
-        guard let url = navigationAction.request.url, let scheme = url.scheme else {
+        switch decideNavigation(for: navigationAction.request.url) {
+        case .allow:
             return .allow
+        case .openExternal(let url):
+            await UIApplication.shared.open(url, options: [:])
+            return .cancel
         }
-        if isWebScheme(scheme) { return .allow }
-        await UIApplication.shared.open(url, options: [:])
-        return .cancel
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        guard isMainFrameError(error) else { return }
-        deliver(
-            .error(BushaPayError(
-                message: "Could not load checkout (\(error.localizedDescription))",
-                code: "WEBVIEW_LOAD_ERROR"
-            ))
-        )
+        handleNavigationError(error)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        guard isMainFrameError(error) else { return }
-        deliver(
-            .error(BushaPayError(
-                message: "Could not load checkout (\(error.localizedDescription))",
-                code: "WEBVIEW_LOAD_ERROR"
-            ))
-        )
+        handleNavigationError(error)
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse) async -> WKNavigationResponsePolicy {
@@ -222,14 +269,7 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         else {
             return .allow
         }
-        let status = response.statusCode
-        if (200..<300).contains(status) || status == 0 {
-            return .allow
-        }
-        deliver(
-            .error(BushaPayError(message: "Checkout failed (HTTP \(status))", code: "WEBVIEW_HTTP_ERROR"))
-        )
-        return .cancel
+        return handleHttpStatusForMainFrame(response.statusCode)
     }
 
     private func isMainFrameError(_ error: Error) -> Bool {

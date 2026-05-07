@@ -9,7 +9,7 @@ struct ChooserView: View {
     let onChoose: (PaymentMethod) -> Void
     let onDismiss: () -> Void
 
-    private func shows(_ method: PaymentMethod) -> Bool {
+    func shows(_ method: PaymentMethod) -> Bool {
         guard let allowed = allowedPaymentMethods, !allowed.isEmpty else { return true }
         return allowed.contains(method)
     }

@@ -1,6 +1,7 @@
 import XCTest
 @testable import BushaPay
 
+@MainActor
 final class BushaPayTests: XCTestCase {
     override func setUp() {
         super.setUp()
@@ -12,8 +13,6 @@ final class BushaPayTests: XCTestCase {
         BushaPay.resetForTesting()
         super.tearDown()
     }
-
-    // MARK: - URLs and environment
 
     func testCallbackSchemeUsesBundleId() {
         BushaPay.initialize(publicKey: "pub_x")
@@ -34,8 +33,6 @@ final class BushaPayTests: XCTestCase {
         XCTAssertEqual(BushaPay.platformUrl, "https://api.sandbox.busha.so")
         XCTAssertTrue(BushaPay.isDevMode)
     }
-
-    // MARK: - parseCallback
 
     func testParseCallbackCompleted() {
         let url = URL(string: "co.example.testapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_1")!
@@ -71,8 +68,6 @@ final class BushaPayTests: XCTestCase {
         XCTAssertEqual(err.message, "Payment failed")
     }
 
-    // MARK: - handleDeepLink
-
     func testHandleDeepLinkRejectsNonCallbackUrls() {
         BushaPay.initialize(publicKey: "pub_x")
         let url = URL(string: "https://example.com/")!
@@ -88,5 +83,94 @@ final class BushaPayTests: XCTestCase {
         let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled")!
         XCTAssertTrue(BushaPay.handleDeepLink(url))
         XCTAssertEqual(seen, url)
+    }
+
+    func testHandleDeepLinkRejectsWrongScheme() {
+        BushaPay.initialize(publicKey: "pub_x")
+        let url = URL(string: "co.other.app.busha-pay://callback?status=completed")!
+        XCTAssertFalse(BushaPay.handleDeepLink(url))
+    }
+
+    func testHandleDeepLinkRejectsWrongHost() {
+        BushaPay.initialize(publicKey: "pub_x")
+        let url = URL(string: "co.example.testapp.busha-pay://other?status=completed")!
+        XCTAssertFalse(BushaPay.handleDeepLink(url))
+    }
+
+    func testHandleDeepLinkReturnsTrueWithoutPendingHandler() {
+        BushaPay.initialize(publicKey: "pub_x")
+        // No handler registered — the SDK still owns the URL (consumed it)
+        // even if there's no listener. Returning false here would suggest
+        // the merchant should handle the URL themselves, which would be
+        // wrong.
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled")!
+        XCTAssertTrue(BushaPay.handleDeepLink(url))
+    }
+
+    func testUnregisterCallbackHandlerStopsForwarding() {
+        BushaPay.initialize(publicKey: "pub_x")
+        var hits = 0
+        BushaPay.registerCallbackHandler { _ in hits += 1 }
+        BushaPay.unregisterCallbackHandler()
+
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled")!
+        _ = BushaPay.handleDeepLink(url)
+        XCTAssertEqual(hits, 0)
+    }
+
+    func testIsInitializedFlipsAfterInit() {
+        XCTAssertFalse(BushaPay.isInitialized)
+        BushaPay.initialize(publicKey: "pub_x")
+        XCTAssertTrue(BushaPay.isInitialized)
+    }
+
+    func testIsCheckoutInProgressIsFalseInitially() {
+        BushaPay.initialize(publicKey: "pub_x")
+        XCTAssertFalse(BushaPay.isCheckoutInProgress)
+    }
+
+    func testResetForTestingClearsEverything() {
+        BushaPay.initialize(publicKey: "pub_x", environment: .sandbox)
+        BushaPay.registerCallbackHandler { _ in }
+
+        BushaPay.resetForTesting()
+
+        XCTAssertFalse(BushaPay.isInitialized)
+        XCTAssertFalse(BushaPay.isCheckoutInProgress)
+        XCTAssertFalse(BushaPay.isDevMode, "environment should reset to .live")
+        // The handler was cleared — re-registering against a new closure
+        // should be the only thing receiving subsequent callbacks.
+        var fired = false
+        BushaPay.bundleIdOverride = "co.example.testapp"
+        BushaPay.initialize(publicKey: "pub_y")
+        BushaPay.registerCallbackHandler { _ in fired = true }
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled")!
+        _ = BushaPay.handleDeepLink(url)
+        XCTAssertTrue(fired)
+    }
+
+    func testParseCallbackMissingStatusFallsBackToUnknownError() {
+        let url = URL(string: "co.example.testapp.busha-pay://callback")!
+        guard case .error(let err) = BushaPay.parseCallback(url) else {
+            return XCTFail("expected error")
+        }
+        XCTAssertEqual(err.code, "unknown")
+        XCTAssertEqual(err.message, "Payment failed")
+    }
+
+    func testParseCallbackUsesEmptyPaymentIdWhenMissing() {
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=completed")!
+        guard case .success(let s) = BushaPay.parseCallback(url) else {
+            return XCTFail("expected success")
+        }
+        XCTAssertEqual(s.paymentId, "")
+    }
+
+    func testParseCallbackUrlEncodedMessageIsDecoded() {
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=failed&error_message=Card%20declined%20%E2%9C%97")!
+        guard case .error(let err) = BushaPay.parseCallback(url) else {
+            return XCTFail("expected error")
+        }
+        XCTAssertEqual(err.message, "Card declined ✗")
     }
 }
