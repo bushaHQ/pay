@@ -41,7 +41,7 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     private let skipWebViewSetup: Bool
     private let completion: (BushaPayResult) -> Void
 
-    private var webView: WKWebView!
+    private var webView: WKWebView?
     private var loadingView: UIView?
     private(set) var didDeliverResult = false
     private var formSubmitted = false
@@ -120,17 +120,18 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         }
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
 
-        webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
-        webView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(webView)
+        let wv = WKWebView(frame: .zero, configuration: configuration)
+        wv.navigationDelegate = self
+        wv.uiDelegate = self
+        wv.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(wv)
         NSLayoutConstraint.activate([
-            webView.topAnchor.constraint(equalTo: view.topAnchor),
-            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            wv.topAnchor.constraint(equalTo: view.topAnchor),
+            wv.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            wv.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            wv.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
+        webView = wv
     }
 
     private func addLoadingOverlay() {
@@ -161,7 +162,7 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
             deliver(.error(BushaPayError(message: "Failed to load the bundled checkout page", code: "HTML_LOAD_ERROR")))
             return
         }
-        webView.loadHTMLString(html, baseURL: URL(string: checkoutUrl))
+        webView?.loadHTMLString(html, baseURL: URL(string: checkoutUrl))
     }
 
     /// Decides what to do with a navigation URL — testable in isolation.
@@ -298,7 +299,7 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         for (k, v) in fields { payload[k] = v }
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript(Scripts.initCheckout(payloadJson: json), completionHandler: nil)
+        webView?.evaluateJavaScript(Scripts.initCheckout(payloadJson: json), completionHandler: nil)
     }
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
@@ -323,9 +324,15 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     }
 
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        // User swiped the page sheet down. The view has already been
-        // dismissed by the time we get here — call completion directly
-        // without trying to dismiss again.
+        handleInteractiveDismiss()
+    }
+
+    /// Handles user-driven swipe-down dismissal. Split out from the
+    /// `UIAdaptivePresentationControllerDelegate` shim so tests can drive
+    /// it directly without fabricating a `UIPresentationController`.
+    /// The OS has already dismissed the view by the time this fires, so
+    /// we don't call `dismiss(animated:)`.
+    func handleInteractiveDismiss() {
         guard !didDeliverResult else { return }
         didDeliverResult = true
         bootstrapTimer?.invalidate()

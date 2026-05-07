@@ -196,12 +196,7 @@ final class CheckoutSheetViewControllerTests: XCTestCase {
     func testSwipeDismissDeliversCancelled() {
         var captured: BushaPayResult?
         let sheet = makeSheet { captured = $0 }
-        // Caller is `presentationController` but we don't have a real one
-        // in tests, so we pass a placeholder via UIPresentationController
-        // initializer. The delegate method only inspects `didDeliverResult`.
-        sheet.presentationControllerDidDismiss(
-            UIPresentationController(presentedViewController: sheet, presenting: nil)
-        )
+        sheet.handleInteractiveDismiss()
         guard case .cancelled = captured else { return XCTFail() }
         XCTAssertTrue(sheet.didDeliverResult)
     }
@@ -210,9 +205,7 @@ final class CheckoutSheetViewControllerTests: XCTestCase {
         var fireCount = 0
         let sheet = makeSheet { _ in fireCount += 1 }
         sheet.processBridgePayload(#"{"type":"success","data":{"data":{"id":"PAYR_X","status":"completed"}}}"#)
-        sheet.presentationControllerDidDismiss(
-            UIPresentationController(presentedViewController: sheet, presenting: nil)
-        )
+        sheet.handleInteractiveDismiss()
         XCTAssertEqual(fireCount, 1)
     }
 }
