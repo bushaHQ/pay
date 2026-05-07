@@ -16,8 +16,8 @@ enum Scripts {
     })();
     """
 
-    /// Defines `window.BushaPayBridge(payload)` for iOS — postMessages to
-    /// the WKWebView's `BushaPayBridge` script-message handler.
+    /// Routes `window.BushaPayBridge(payload)` through the WKWebView's
+    /// script-message handler.
     static let bushaPayBridgeShim = """
     (function() {
       window.BushaPayBridge = function(payload) {
@@ -85,20 +85,20 @@ enum Scripts {
         """
     }
 
-    /// Calls the page's `initCheckout(config)` with the JSON-encoded
-    /// payload. Triggers the hidden form POST to pug-pay.
     static func initCheckout(payloadJson: String) -> String {
         "initCheckout(\(payloadJson));"
     }
 }
 
-/// JSON-encodes a string into a quoted JSON string literal (with all the
-/// escaping `JSON.stringify` does). Used to inject user-controlled text
-/// into JavaScript safely.
+/// Quotes a string into a JSON string literal — equivalent to
+/// `JSON.stringify(s)`. Used to escape user-controlled text being
+/// interpolated into JavaScript.
 func jsonEncode(_ s: String) -> String {
+    // `JSONSerialization` only accepts collections at the top level
+    // unless `.fragmentsAllowed` is set. We wrap in an array, then strip
+    // the brackets to get just the encoded literal.
     let data = (try? JSONSerialization.data(withJSONObject: [s], options: [.fragmentsAllowed])) ?? Data("[\"\"]".utf8)
     let raw = String(data: data, encoding: .utf8) ?? "[\"\"]"
-    // Strip surrounding `[` `]` so we get just the encoded literal.
     if raw.hasPrefix("[") && raw.hasSuffix("]") {
         return String(raw.dropFirst().dropLast())
     }

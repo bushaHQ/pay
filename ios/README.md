@@ -18,18 +18,20 @@ Official iOS (Swift Package) SDK for accepting crypto payments via Busha.
 In Xcode: **File → Add Package Dependencies…** and enter:
 
 ```
-https://github.com/bushaHQ/pay
+https://github.com/bushaHQ/pay-ios
 ```
 
-Pick the version (releases are tagged `ios/v<version>`) and add the **BushaPay** library to your target.
+Pick the version and add the **BushaPay** library to your target.
 
 For a `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/bushaHQ/pay", from: "0.0.1"),
+.package(url: "https://github.com/bushaHQ/pay-ios", from: "0.0.1"),
 ```
 
 then list `BushaPay` as a target dependency.
+
+> **Note:** the SDK is authored in the [bushaHQ/pay](https://github.com/bushaHQ/pay) monorepo under `ios/`. Each release is mirrored to the standalone [bushaHQ/pay-ios](https://github.com/bushaHQ/pay-ios) repo above so Swift Package Manager can resolve it the way it expects (`Package.swift` at root, plain `v<version>` tags). Issues, PRs, and source live in the monorepo.
 
 ## Quick Start
 

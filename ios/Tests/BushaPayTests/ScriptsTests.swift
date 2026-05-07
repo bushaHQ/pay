@@ -4,7 +4,6 @@ import XCTest
 final class ScriptsTests: XCTestCase {
     func testAutoSelectEscapesPrefixSafely() {
         let script = Scripts.autoSelect(rowTextPrefix: #"Bus"ha"#)
-        // The prefix must end up as a JS string literal with escaped quotes.
         XCTAssertTrue(script.contains(#""Bus\"ha""#))
     }
 

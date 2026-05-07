@@ -74,4 +74,34 @@ final class BushaPayConfigTests: XCTestCase {
         )
         XCTAssertEqual(config.allowedPaymentMethods, [.bushaApp])
     }
+
+    func testParentOriginIncludesPort() {
+        let config = BushaPayConfig(
+            quoteAmount: "10000",
+            quoteCurrency: "NGN",
+            targetCurrency: "NGN",
+            sourceCurrency: "USDT"
+        )
+        let fields = config.toFormFields(
+            publicKey: "pub_x",
+            callbackUrl: "scheme://callback",
+            checkoutUrl: "https://localhost:8080/pay"
+        )
+        XCTAssertEqual(fields["parentOrigin"], "https://localhost:8080")
+    }
+
+    func testParentOriginOmittedWhenCheckoutUrlIsBogus() {
+        let config = BushaPayConfig(
+            quoteAmount: "10000",
+            quoteCurrency: "NGN",
+            targetCurrency: "NGN",
+            sourceCurrency: "USDT"
+        )
+        let fields = config.toFormFields(
+            publicKey: "pub_x",
+            callbackUrl: "scheme://callback",
+            checkoutUrl: "" // empty url → no host → no origin
+        )
+        XCTAssertNil(fields["parentOrigin"])
+    }
 }

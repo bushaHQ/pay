@@ -46,4 +46,38 @@ final class BushaPayResultTests: XCTestCase {
         ])
         XCTAssertEqual(success.paymentId, "PAYR_FLAT")
     }
+
+    func testFromCommerceJsHandlesEmptyPayloadFallback() {
+        let success = BushaPaySuccess.fromCommerceJs([:])
+        XCTAssertEqual(success.paymentId, "")
+        XCTAssertEqual(success.status, "completed")
+        XCTAssertFalse(success.hasFullData)
+    }
+
+    func testFromCommerceJsDefaultsStatusToCompleted() {
+        let success = BushaPaySuccess.fromCommerceJs(["id": "PAYR_42"])
+        XCTAssertEqual(success.status, "completed")
+    }
+
+    func testBushaPayErrorIsErrorConformant() {
+        let err = BushaPayError(message: "boom", code: "OOPS")
+        let result: Result<Void, Error> = .failure(err)
+        switch result {
+        case .failure(let captured as BushaPayError):
+            XCTAssertEqual(captured.code, "OOPS")
+            XCTAssertEqual(captured.message, "boom")
+        default:
+            XCTFail("expected BushaPayError")
+        }
+    }
+
+    func testBushaPaySuccessHasFullDataWhenTargetAmountSet() {
+        let success = BushaPaySuccess(
+            paymentId: "PAYR_T",
+            status: "completed",
+            sourceAmount: nil,
+            targetAmount: "100"
+        )
+        XCTAssertTrue(success.hasFullData)
+    }
 }

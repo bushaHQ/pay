@@ -3,9 +3,7 @@ import XCTest
 
 final class BridgeTests: XCTestCase {
     func testReady() {
-        if case .ready = parseBridgeMessage(#"{"type":"ready"}"#) {
-            // pass
-        } else {
+        if case .ready = parseBridgeMessage(#"{"type":"ready"}"#) {} else {
             XCTFail("expected .ready")
         }
     }
@@ -22,9 +20,7 @@ final class BridgeTests: XCTestCase {
     }
 
     func testCloseMapsToCancelled() {
-        if case .result(.cancelled) = parseBridgeMessage(#"{"type":"close"}"#) {
-            // pass
-        } else {
+        if case .result(.cancelled) = parseBridgeMessage(#"{"type":"close"}"#) {} else {
             XCTFail("expected .cancelled")
         }
     }
@@ -47,10 +43,10 @@ final class BridgeTests: XCTestCase {
     }
 
     func testUnparseableJsonIsUnknown() {
-        if case .unknown = parseBridgeMessage("not json") { /* pass */ } else { XCTFail() }
+        if case .unknown = parseBridgeMessage("not json") {} else { XCTFail() }
     }
 
     func testUnknownTypeIsUnknown() {
-        if case .unknown = parseBridgeMessage(#"{"type":"unknown"}"#) { /* pass */ } else { XCTFail() }
+        if case .unknown = parseBridgeMessage(#"{"type":"unknown"}"#) {} else { XCTFail() }
     }
 }

@@ -132,24 +132,26 @@ jobs:
     permissions:
       contents: write
     env:
-      IOS_BUILD_DESTINATION: generic/platform=iOS Simulator
-      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=latest
+      IOS_TEST_DESTINATION: platform=macOS,variant=Mac Catalyst,arch=arm64
     steps:
       - uses: actions/checkout@v6
 
+      - name: Cache homebrew
+        id: brew-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /opt/homebrew/Cellar/librsvg
+            /opt/homebrew/opt/librsvg
+            /opt/homebrew/bin/rsvg-convert
+          key: ${{ runner.os }}-brew-librsvg-v1
+
       - name: Install librsvg (rsvg-convert for SVG → PDF in make sync-ios)
+        if: steps.brew-cache.outputs.cache-hit != 'true'
         run: brew install librsvg
 
       - name: Sync shared assets
         run: make sync-ios
-
-      - name: Build
-        working-directory: ios
-        run: |
-          xcodebuild \
-            -scheme BushaPay \
-            -destination "$IOS_BUILD_DESTINATION" \
-            build
 
       - name: Test (with coverage)
         working-directory: ios
@@ -182,7 +184,7 @@ jobs:
       - name: Enforce minimum coverage
         run: |
           PCT="${{ steps.coverage.outputs.percentage }}"
-          MIN=50
+          MIN=70
           if (( $(echo "$PCT < $MIN" | bc -l) )); then
             echo "iOS coverage $PCT% is below minimum $MIN%"
             exit 1

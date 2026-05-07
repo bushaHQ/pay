@@ -67,15 +67,12 @@ final class ChooserViewControllerTests: XCTestCase {
             completion: { _ in }
         )
         await fulfillment(of: [loaderCalled], timeout: 1)
-        // Also verify the chooser stays alive long enough for the async
-        // task to resolve without crashing.
         XCTAssertNotNil(chooser.view)
     }
 
     func testNilMerchantNameDoesNotCrash() async {
         let loaderCalled = expectation(description: "loader returns nil")
-        // Keep a strong reference — the loader Task holds `[weak self]`,
-        // so a dropped chooser would silently never run the loader.
+        // Strong reference required — the loader Task captures `[weak self]`.
         let chooser = makeChooser(
             loader: {
                 loaderCalled.fulfill()
@@ -88,13 +85,11 @@ final class ChooserViewControllerTests: XCTestCase {
     }
 
     func testAllowedPaymentMethodsAreStoredOnTheView() {
-        // The chooser view isn't easy to introspect from XCTest without
-        // ViewInspector, but we can confirm the controller accepts the
-        // value without crashing across all expected shapes.
         for allowed: [PaymentMethod]? in [nil, [], [.bushaApp], [.stablecoins], [.bushaApp, .stablecoins]] {
             let chooser = makeChooser(allowed: allowed) { _ in }
             chooser.resolve(with: nil)
             XCTAssertTrue(chooser.didComplete)
         }
     }
+
 }

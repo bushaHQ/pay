@@ -2,9 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Hosts ``ChooserView`` and resolves to a `PaymentMethod?` (`nil` =
-/// dismissed). Backdrop is rendered by setting
-/// `modalPresentationStyle = .overFullScreen` so the merchant's view stays
-/// visible behind a translucent layer.
+/// dismissed). Presented as `.overFullScreen` so the translucent
+/// backdrop sits over the merchant's view.
 final class ChooserViewController: UIViewController {
     private let config: BushaPayConfig
     private let allowedPaymentMethods: [PaymentMethod]?
@@ -53,8 +52,6 @@ final class ChooserViewController: UIViewController {
 
     @objc func handleBackdropTap() { resolve(with: nil) }
 
-    /// Resolves the chooser. Internal so tests can drive it directly
-    /// without simulating a backdrop tap or SwiftUI button press.
     func resolve(with method: PaymentMethod?) {
         guard !didComplete else { return }
         didComplete = true
@@ -75,9 +72,10 @@ final class ChooserViewController: UIViewController {
             onDismiss: { [weak self] in self?.resolve(with: nil) }
         )
 
-        // Block backdrop taps that hit the dialog itself.
+        // Swallow taps inside the dialog so they don't propagate to the
+        // backdrop's tap recognizer.
         let dialog = body.background(Color.clear).contentShape(Rectangle())
-            .onTapGesture { /* swallow */ }
+            .onTapGesture {}
 
         if let hostingController {
             hostingController.rootView = AnyView(dialog)

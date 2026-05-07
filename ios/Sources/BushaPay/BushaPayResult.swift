@@ -78,12 +78,10 @@ public struct BushaPaySuccess: Sendable {
         self.currency = currency
     }
 
-    /// Builds a success result from a Busha-app callback URL (limited data).
     static func fromCallback(paymentId: String) -> BushaPaySuccess {
         BushaPaySuccess(paymentId: paymentId, status: "completed")
     }
 
-    /// Builds a success result from a `commerce-js` `onSuccess` payload (full data).
     static func fromCommerceJs(_ payload: [String: Any]) -> BushaPaySuccess {
         let data = (payload["data"] as? [String: Any]) ?? payload
         return BushaPaySuccess(

@@ -2,10 +2,8 @@ import XCTest
 import UIKit
 @testable import BushaPay
 
-/// End-to-end-ish tests for ``BushaPay/checkout(config:from:onComplete:)``.
-/// We intercept `UIViewController.present(_:animated:completion:)` on a
-/// fake presenter so we can observe which VC the SDK tried to show
-/// without needing a real window or simulator UI.
+/// `FakePresenter` captures whatever VC the SDK tried to present so the
+/// flow runs without a real window or simulator UI.
 @MainActor
 final class BushaPayFlowTests: XCTestCase {
     private static let config = BushaPayConfig(
@@ -35,6 +33,20 @@ final class BushaPayFlowTests: XCTestCase {
         XCTAssertTrue(presenter.presentedVCs.first is ChooserViewController,
                       "expected ChooserViewController, got \(String(describing: presenter.presentedVCs.first))")
         XCTAssertTrue(BushaPay.isCheckoutInProgress)
+    }
+
+    /// FakePresenter doesn't run the chooser's view lifecycle —
+    /// `loadViewIfNeeded()` forces the loader Task to start.
+    func testChooserMerchantLoaderIsTriggeredOnPresent() async {
+        let presenter = FakePresenter()
+        BushaPay.checkout(config: Self.config, from: presenter) { _ in }
+        await waitForPresented(presenter)
+        guard let chooser = presenter.presentedVCs.first as? ChooserViewController else {
+            return XCTFail()
+        }
+        chooser.loadViewIfNeeded()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertNotNil(chooser.viewIfLoaded)
     }
 
     func testSecondCheckoutWhileInProgressReturnsCheckoutInProgressError() async {
@@ -72,9 +84,8 @@ final class BushaPayFlowTests: XCTestCase {
     }
 
     func testAllowedPaymentMethodsBushaAppFallsThroughToSheetWhenAppNotInstalled() async {
-        // The test bundle has no `LSApplicationQueriesSchemes` for the
-        // Busha app, so `UIApplication.canOpenURL(...)` returns false
-        // and the SDK should fall through to the WebView checkout.
+        // Test bundle has no `LSApplicationQueriesSchemes`, so
+        // `canOpenURL("co.busha.apple://...")` returns false.
         let presenter = FakePresenter()
         let single = BushaPayConfig(
             quoteAmount: "10000",
@@ -100,8 +111,6 @@ final class BushaPayFlowTests: XCTestCase {
     }
 
     func testCheckoutRegistersCallbackHandlerForSheet() async {
-        // For the stablecoins path we go straight to the sheet, which
-        // must be wired to receive deep-link callbacks.
         let presenter = FakePresenter()
         let single = BushaPayConfig(
             quoteAmount: "10000",
@@ -118,7 +127,6 @@ final class BushaPayFlowTests: XCTestCase {
         }
         await waitForPresented(presenter)
 
-        // Simulate the Busha app firing back via a deep link.
         let url = URL(string: "co.example.testapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_FLOW")!
         XCTAssertTrue(BushaPay.handleDeepLink(url))
 
@@ -128,11 +136,160 @@ final class BushaPayFlowTests: XCTestCase {
         XCTAssertFalse(BushaPay.isCheckoutInProgress, "in-progress flag must clear after delivery")
     }
 
-    // MARK: helpers
+    func testChooserCancelDeliversCancelledAndClearsInProgressFlag() async {
+        let presenter = FakePresenter()
+        let exp = expectation(description: "cancel delivers")
+        var captured: BushaPayResult?
+        BushaPay.checkout(config: Self.config, from: presenter) { result in
+            captured = result
+            exp.fulfill()
+        }
+        await waitForPresented(presenter)
+        guard let chooser = presenter.presentedVCs.first as? ChooserViewController else {
+            return XCTFail("expected chooser")
+        }
+
+        chooser.handleBackdropTap()
+
+        await fulfillment(of: [exp], timeout: 1)
+        guard case .cancelled = captured else { return XCTFail() }
+        XCTAssertFalse(BushaPay.isCheckoutInProgress)
+    }
+
+    func testChooserStablecoinsTapPresentsSheet() async {
+        let presenter = FakePresenter()
+        BushaPay.checkout(config: Self.config, from: presenter) { _ in }
+        await waitForPresented(presenter)
+        guard let chooser = presenter.presentedVCs.first as? ChooserViewController else {
+            return XCTFail()
+        }
+
+        chooser.resolve(with: .stablecoins)
+
+        await waitForCount(presenter, count: 2)
+        XCTAssertTrue(presenter.presentedVCs[1] is CheckoutSheetViewController)
+    }
+
+    func testChooserBushaAppTapFallsThroughToSheet() async {
+        let presenter = FakePresenter()
+        BushaPay.checkout(config: Self.config, from: presenter) { _ in }
+        await waitForPresented(presenter)
+        guard let chooser = presenter.presentedVCs.first as? ChooserViewController else {
+            return XCTFail()
+        }
+
+        chooser.resolve(with: .bushaApp)
+
+        await waitForCount(presenter, count: 2)
+        XCTAssertTrue(presenter.presentedVCs[1] is CheckoutSheetViewController)
+    }
+
+    func testFullStablecoinsFlowDeliversSuccessViaCallback() async {
+        let presenter = FakePresenter()
+        var captured: BushaPayResult?
+        let exp = expectation(description: "callback resolves")
+        BushaPay.checkout(config: Self.config, from: presenter) { result in
+            captured = result
+            exp.fulfill()
+        }
+        await waitForPresented(presenter)
+        guard let chooser = presenter.presentedVCs.first as? ChooserViewController else {
+            return XCTFail()
+        }
+        chooser.resolve(with: .stablecoins)
+        await waitForCount(presenter, count: 2)
+
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_END")!
+        XCTAssertTrue(BushaPay.handleDeepLink(url))
+
+        await fulfillment(of: [exp], timeout: 1)
+        guard case .success(let s) = captured else { return XCTFail() }
+        XCTAssertEqual(s.paymentId, "PAYR_END")
+        XCTAssertFalse(BushaPay.isCheckoutInProgress)
+    }
+
+    func testLaunchBushaAppDeepLinkCallbackResolvesSuccess() async {
+        // Stub the launcher — `UIApplication.shared.open` hangs in XCTest.
+        BushaPay.urlLauncher = { _, completion in completion(true) }
+
+        let exp = expectation(description: "completion fires")
+        var captured: BushaPayResult?
+        BushaPay.launchBushaApp(URL(string: "co.busha.apple://busha.co/pay")!) { result in
+            captured = result
+            exp.fulfill()
+        }
+
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_DEEP")!
+        XCTAssertTrue(BushaPay.handleDeepLink(url))
+
+        await fulfillment(of: [exp], timeout: 1)
+        guard case .success(let s) = captured else { return XCTFail() }
+        XCTAssertEqual(s.paymentId, "PAYR_DEEP")
+    }
+
+    func testLaunchBushaAppResumeWithoutCallbackResolvesCancelled() async {
+        BushaPay.urlLauncher = { _, completion in completion(true) }
+        BushaPay.resumeCancelDelay = 0.05
+
+        let exp = expectation(description: "cancelled on resume")
+        var captured: BushaPayResult?
+        BushaPay.launchBushaApp(URL(string: "co.busha.apple://busha.co/pay")!) { result in
+            captured = result
+            exp.fulfill()
+        }
+
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+
+        await fulfillment(of: [exp], timeout: 2)
+        guard case .cancelled = captured else { return XCTFail() }
+    }
+
+    func testLaunchBushaAppDeepLinkBeatsResumeRace() async {
+        BushaPay.urlLauncher = { _, completion in completion(true) }
+        BushaPay.resumeCancelDelay = 0.5
+
+        let exp = expectation(description: "callback wins")
+        var captured: BushaPayResult?
+        BushaPay.launchBushaApp(URL(string: "co.busha.apple://busha.co/pay")!) { result in
+            captured = result
+            exp.fulfill()
+        }
+
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=completed&paymentRequestId=PAYR_RACE")!
+        _ = BushaPay.handleDeepLink(url)
+
+        await fulfillment(of: [exp], timeout: 1)
+        guard case .success(let s) = captured else { return XCTFail() }
+        XCTAssertEqual(s.paymentId, "PAYR_RACE")
+    }
+
+    func testLaunchBushaAppDeliversErrorWhenLauncherFails() async {
+        // `opened: false` — the OS rejected the URL.
+        BushaPay.urlLauncher = { _, completion in completion(false) }
+
+        let exp = expectation(description: "launch failure delivers error")
+        var captured: BushaPayResult?
+        BushaPay.launchBushaApp(URL(string: "co.busha.apple://busha.co/pay")!) { result in
+            captured = result
+            exp.fulfill()
+        }
+
+        await fulfillment(of: [exp], timeout: 1)
+        guard case .error(let err) = captured else { return XCTFail() }
+        XCTAssertEqual(err.code, "BUSHA_APP_LAUNCH_FAILED")
+    }
 
     private func waitForPresented(_ presenter: FakePresenter, timeout: TimeInterval = 1) async {
         let deadline = Date().addingTimeInterval(timeout)
         while presenter.presentedVCs.isEmpty && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    private func waitForCount(_ presenter: FakePresenter, count: Int, timeout: TimeInterval = 1) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while presenter.presentedVCs.count < count && Date() < deadline {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
     }

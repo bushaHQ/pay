@@ -1,7 +1,6 @@
 import UIKit
 import WebKit
 
-/// Auto-select hint passed to the WebView checkout.
 enum AutoSelect {
     case none, bushaApp, stablecoins
 
@@ -22,12 +21,10 @@ enum AutoSelect {
     }
 }
 
-/// Hosts a `WKWebView` running the bundled bridge HTML. The dispatch
-/// methods (`processBridgePayload`, `handleNavigationError`,
-/// `handleHttpStatusForMainFrame`) are split out from the
-/// `WKNavigationDelegate` / `WKScriptMessageHandler` glue so tests can
-/// drive them without constructing a real `WKScriptMessage` /
-/// `WKNavigation` (both `final`, no public init).
+/// `processBridgePayload`, `handleNavigationError`, and
+/// `handleHttpStatusForMainFrame` are split out from the delegate glue
+/// because `WKScriptMessage` / `WKNavigation` are `final` and have no
+/// public init — tests drive these helpers directly.
 final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate, UIAdaptivePresentationControllerDelegate {
     static let defaultBootstrapTimeout: TimeInterval = 30
 
@@ -82,8 +79,8 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        // Listen for user-driven swipe-down dismissal so the merchant's
-        // completion fires with `.cancelled` instead of hanging.
+        // Without this, a swipe-down dismiss never delivers a result
+        // and the merchant's completion hangs.
         presentationController?.delegate = self
 
         if !skipWebViewSetup {
@@ -165,7 +162,6 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         webView?.loadHTMLString(html, baseURL: URL(string: checkoutUrl))
     }
 
-    /// Decides what to do with a navigation URL — testable in isolation.
     enum NavigationDecision: Equatable {
         case allow
         case openExternal(URL)
@@ -177,8 +173,6 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         return .openExternal(url)
     }
 
-    /// Drives the bridge from a raw JSON string. Tests call this directly
-    /// so we don't need to fabricate a `WKScriptMessage`.
     func processBridgePayload(_ raw: String) {
         guard !didDeliverResult else { return }
         switch parseBridgeMessage(raw) {
@@ -196,8 +190,6 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         }
     }
 
-    /// Maps a navigation error onto the result. Tests pass an `NSError`
-    /// directly without going through `WKNavigation`.
     func handleNavigationError(_ error: Error) {
         guard isMainFrameError(error) else { return }
         deliver(
@@ -208,8 +200,6 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         )
     }
 
-    /// Maps an HTTP status code onto the result for main-frame responses.
-    /// Returns the policy the delegate should report.
     func handleHttpStatusForMainFrame(_ statusCode: Int) -> WKNavigationResponsePolicy {
         if (200..<300).contains(statusCode) || statusCode == 0 {
             return .allow
@@ -250,7 +240,9 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         case .allow:
             return .allow
         case .openExternal(let url):
-            await UIApplication.shared.open(url, options: [:])
+            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                BushaPay.urlLauncher(url) { _ in cont.resume() }
+            }
             return .cancel
         }
     }
@@ -274,11 +266,10 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
     }
 
     private func isMainFrameError(_ error: Error) -> Bool {
+        // Sub-resource failures (analytics, fonts, third-party iframes)
+        // never reach this delegate, so anything we see is main-frame —
+        // except cancellations, which we treat as benign.
         let ns = error as NSError
-        // WKWebView does not expose `isForMainFrame` here, but main-frame
-        // failures are the ones surfaced through these delegate methods —
-        // sub-resource (analytics, fonts, third-party iframes) failures
-        // do not call them. We additionally filter out cancellations.
         if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled { return false }
         return true
     }
@@ -304,7 +295,7 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if let url = navigationAction.request.url {
-            UIApplication.shared.open(url, options: [:])
+            BushaPay.urlLauncher(url) { _ in }
         }
         return nil
     }
@@ -327,11 +318,8 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         handleInteractiveDismiss()
     }
 
-    /// Handles user-driven swipe-down dismissal. Split out from the
-    /// `UIAdaptivePresentationControllerDelegate` shim so tests can drive
-    /// it directly without fabricating a `UIPresentationController`.
-    /// The OS has already dismissed the view by the time this fires, so
-    /// we don't call `dismiss(animated:)`.
+    /// The OS has already dismissed the view by the time this fires;
+    /// don't call `dismiss(animated:)`.
     func handleInteractiveDismiss() {
         guard !didDeliverResult else { return }
         didDeliverResult = true

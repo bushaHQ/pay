@@ -418,3 +418,46 @@ jobs:
           TAG='flutter/v${{ needs.version.outputs.version }}'
           echo "Dispatching publish-flutter.yml on $TAG"
           gh workflow run publish-flutter.yml --ref "$TAG" -f tag="$TAG"
+
+  mirror-ios:
+    name: Mirror iOS package to bushaHQ/pay-ios
+    needs: [version, package]
+    if: |
+      always() &&
+      needs.package.result == 'success' &&
+      (inputs.sdk == 'ios' || inputs.sdk == 'all')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Install librsvg (rsvg-convert for SVG → PDF in make sync)
+        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
+
+      - name: Sync shared assets
+        run: make sync-ios
+
+      - name: Push snapshot to bushaHQ/pay-ios
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          set -euo pipefail
+          cd ios
+          git init -q -b main
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -q -m "iOS SDK v${VERSION}"
+          git remote add mirror "https://x-access-token:${TOKEN}@github.com/bushaHQ/pay-ios.git"
+          if git ls-remote --tags mirror "refs/tags/v${VERSION}" | grep -q .; then
+            echo "Tag v${VERSION} already exists on bushaHQ/pay-ios — skipping."
+            exit 0
+          fi
+          git push --force mirror main
+          git tag "v${VERSION}"
+          git push mirror "v${VERSION}"
+          echo "Mirrored bushaHQ/pay-ios @ v${VERSION}"
