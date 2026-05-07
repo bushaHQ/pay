@@ -21,8 +21,13 @@ import UIKit
 ///     switch result { ... }
 /// }
 /// ```
+/// Public surface is `@MainActor`-isolated: the SDK presents view
+/// controllers and mutates static state during a checkout, so every entry
+/// point — including ``handleDeepLink(_:)`` from your `onOpenURL` /
+/// `application(_:open:options:)` hook — must be called on the main
+/// thread. This is enforced at compile time.
+@MainActor
 public enum BushaPay {
-    private static let queue = DispatchQueue(label: "co.busha.pay.sdk")
     private static var _publicKey: String?
     private static var _environment: BushaEnvironment = .live
     private static var _bundleId: String?
