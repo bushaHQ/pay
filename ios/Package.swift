@@ -6,6 +6,7 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [
         .iOS(.v14),
+        .macCatalyst(.v14),
     ],
     products: [
         .library(name: "BushaPay", targets: ["BushaPay"]),

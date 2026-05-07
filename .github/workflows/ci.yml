@@ -132,7 +132,7 @@ jobs:
     permissions:
       contents: write
     env:
-      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=latest
+      IOS_TEST_DESTINATION: platform=macOS,variant=Mac Catalyst,arch=arm64
     steps:
       - uses: actions/checkout@v6
 
@@ -153,34 +153,18 @@ jobs:
       - name: Sync shared assets
         run: make sync-ios
 
-      - name: Cache DerivedData
-        uses: actions/cache@v4
-        with:
-          path: ios/build/derivedData
-          key: ${{ runner.os }}-xcode-${{ hashFiles('ios/Sources/**/*.swift', 'ios/Tests/**/*.swift', 'ios/Package.swift', 'ios/Sources/BushaPay/Resources/**') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode-
-
-      - name: Pre-boot simulator
-        run: |
-          xcrun simctl boot "iPhone 16" 2>/dev/null || true &
-          echo "Simulator booting in background"
-
-      - name: Test
+      - name: Test (with coverage)
         working-directory: ios
-        env:
-          COVERAGE: ${{ (github.ref == 'refs/heads/dev' && github.event_name == 'push') && 'YES' || 'NO' }}
         run: |
           xcodebuild \
             -scheme BushaPay \
             -destination "$IOS_TEST_DESTINATION" \
-            -enableCodeCoverage $COVERAGE \
+            -enableCodeCoverage YES \
             -derivedDataPath build/derivedData \
             test
 
       - name: Extract coverage percentage
         id: coverage
-        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         working-directory: ios
         run: |
           XCRESULT=$(find build/derivedData -name '*.xcresult' | head -1)
@@ -198,7 +182,6 @@ jobs:
           echo "iOS coverage: $PCT%"
 
       - name: Enforce minimum coverage
-        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         run: |
           PCT="${{ steps.coverage.outputs.percentage }}"
           MIN=70
