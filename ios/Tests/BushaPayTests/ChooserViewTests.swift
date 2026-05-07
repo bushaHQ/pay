@@ -5,7 +5,7 @@ import UIKit
 
 @MainActor
 final class ChooserViewTests: XCTestCase {
-    private static let config = BushaPayConfig(
+    nonisolated private static let config = BushaPayConfig(
         quoteAmount: "10000",
         quoteCurrency: "NGN",
         targetCurrency: "NGN",

@@ -211,7 +211,7 @@ public enum BushaPay {
 
     static var resumeCancelDelay: TimeInterval = 1.5
 
-    static var urlLauncher: (URL, @escaping (Bool) -> Void) -> Void = { url, completion in
+    static var urlLauncher: (URL, @escaping @Sendable (Bool) -> Void) -> Void = { url, completion in
         UIApplication.shared.open(url, options: [:], completionHandler: completion)
     }
 
