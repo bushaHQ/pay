@@ -130,7 +130,8 @@ export const buildBushaAppDeepLink = (
 /**
  * Launches the Busha app via a deep link and waits for the callback URL
  * to resolve. If the merchant app resumes and no callback arrives within
- * 1500ms, the flow completes as cancelled.
+ * 1500ms, the flow completes as cancelled with reason `'abandoned'` — the
+ * outcome is unverified, not a confirmed cancellation.
  */
 export const launchBushaApp = (deepLink: string): Promise<BushaPayResult> =>
   new Promise<BushaPayResult>((resolve) => {
@@ -148,7 +149,7 @@ export const launchBushaApp = (deepLink: string): Promise<BushaPayResult> =>
     const sub = AppState.addEventListener('change', (next) => {
       if (next !== 'active') return;
       setTimeout(() => {
-        if (!finished) complete(cancelled());
+        if (!finished) complete(cancelled('abandoned'));
       }, 1500);
     });
 

@@ -22,7 +22,9 @@ export const parseCallback = (url: string): BushaPayResult => {
     case 'completed':
       return successFromCallback(paymentRequestId);
     case 'cancelled':
-      return cancelled();
+      // The Busha app explicitly reported the user rejected the payment,
+      // and hands back the request id so the merchant can reconcile.
+      return cancelled('rejected', paymentRequestId);
     default: {
       const code = query.error_code ?? status ?? 'unknown';
       const message = query.error_message ?? 'Payment failed';

@@ -134,7 +134,7 @@ describe('BushaPayProvider — chooser flow', () => {
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Close'));
     });
-    expect(result).toEqual({ type: 'cancelled' });
+    expect(result).toEqual({ type: 'cancelled', reason: 'dismissed' });
   });
 });
 
@@ -177,9 +177,15 @@ describe('BushaPayProvider — Busha app flow', () => {
     expect(firstScript).toContain('?paymentMethod=busha');
 
     await act(async () => {
-      BushaPay.handleDeepLink(`${CALLBACK_PREFIX}?status=cancelled`);
+      BushaPay.handleDeepLink(
+        `${CALLBACK_PREFIX}?status=cancelled&paymentRequestId=PAYR_FB`
+      );
     });
-    expect(result).toEqual({ type: 'cancelled' });
+    expect(result).toEqual({
+      type: 'cancelled',
+      reason: 'rejected',
+      paymentId: 'PAYR_FB',
+    });
   });
 
   test('canOpenURL=true → launches the deep link and forwards the callback success', async () => {
@@ -209,7 +215,7 @@ describe('BushaPayProvider — Busha app flow', () => {
     });
   });
 
-  test('Busha launch + cancelled callback resolves to cancelled', async () => {
+  test('Busha launch + cancelled callback resolves to a rejected cancellation with paymentId', async () => {
     mockCanOpenURL.mockImplementation(async () => true);
     let result: Result | undefined;
     renderProvider((r) => {
@@ -220,9 +226,15 @@ describe('BushaPayProvider — Busha app flow', () => {
       fireEvent.press(screen.getByLabelText('Busha'));
     });
     await act(async () => {
-      BushaPay.handleDeepLink(`${CALLBACK_PREFIX}?status=cancelled`);
+      BushaPay.handleDeepLink(
+        `${CALLBACK_PREFIX}?status=cancelled&paymentRequestId=PAYR_REJ`
+      );
     });
-    expect(result).toEqual({ type: 'cancelled' });
+    expect(result).toEqual({
+      type: 'cancelled',
+      reason: 'rejected',
+      paymentId: 'PAYR_REJ',
+    });
   });
 
   test('Busha launch + error callback extracts error_code and error_message', async () => {
@@ -247,7 +259,7 @@ describe('BushaPayProvider — Busha app flow', () => {
     });
   });
 
-  test('Busha launch + AppState resume without callback within 1.5s resolves to cancelled', async () => {
+  test('Busha launch + AppState resume without callback within 1.5s resolves to an abandoned cancellation', async () => {
     jest.useFakeTimers();
     mockCanOpenURL.mockImplementation(async () => true);
     let result: Result | undefined;
@@ -263,7 +275,7 @@ describe('BushaPayProvider — Busha app flow', () => {
     await act(async () => {
       jest.advanceTimersByTime(1500);
     });
-    expect(result).toEqual({ type: 'cancelled' });
+    expect(result).toEqual({ type: 'cancelled', reason: 'abandoned' });
     jest.useRealTimers();
   });
 });

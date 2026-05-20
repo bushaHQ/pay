@@ -180,7 +180,10 @@ describe('BushaPaySheet — bridge messages', () => {
     act(() =>
       webViewMock.__lastWebView?.emitMessage(JSON.stringify({ type: 'close' }))
     );
-    expect(onResult).toHaveBeenCalledWith({ type: 'cancelled' });
+    expect(onResult).toHaveBeenCalledWith({
+      type: 'cancelled',
+      reason: 'dismissed',
+    });
   });
 
   test('error message delivers an error with code and message', () => {
@@ -227,7 +230,10 @@ describe('BushaPaySheet — bridge messages', () => {
       )
     );
     expect(onResult).toHaveBeenCalledTimes(1);
-    expect(onResult.mock.calls[0]?.[0]).toEqual({ type: 'cancelled' });
+    expect(onResult.mock.calls[0]?.[0]).toEqual({
+      type: 'cancelled',
+      reason: 'dismissed',
+    });
   });
 
   test('non-JSON messages are ignored', () => {
