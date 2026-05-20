@@ -113,12 +113,42 @@ class BushaPaySuccess extends BushaPayResult {
   String toString() => 'BushaPaySuccess(paymentId: $paymentId, status: $status, hasFullData: $hasFullData)';
 }
 
-/// User dismissed the checkout or backed out of the Busha app without paying.
+/// Why a checkout ended without a completed payment.
+enum BushaPayCancelledReason {
+  /// The user dismissed the in-app chooser or web checkout sheet — close
+  /// button, backdrop tap, or drag-to-dismiss.
+  dismissed,
+
+  /// The Busha app reported that the user explicitly rejected the payment.
+  /// [BushaPayCancelled.paymentId] carries the payment request ID so you
+  /// can reconcile server-side.
+  rejected,
+
+  /// The user returned to your app from the Busha app without a callback
+  /// arriving. The payment outcome is **unverified** — it may still have
+  /// succeeded. Always reconcile server-side (webhook / status API)
+  /// before showing the user a final state.
+  abandoned,
+}
+
+/// The checkout ended without a completed payment.
+///
+/// Inspect [reason] to tell *how* it ended. In particular,
+/// [BushaPayCancelledReason.abandoned] does **not** mean the payment
+/// failed — only that the SDK never received a result. Verify server-side.
 class BushaPayCancelled extends BushaPayResult {
-  const BushaPayCancelled();
+  /// How the checkout ended. Defaults to [BushaPayCancelledReason.dismissed].
+  final BushaPayCancelledReason reason;
+
+  /// The payment request ID. Present only when [reason] is
+  /// [BushaPayCancelledReason.rejected] — the Busha app hands it back so
+  /// the merchant can reconcile the rejected request.
+  final String? paymentId;
+
+  const BushaPayCancelled({this.reason = BushaPayCancelledReason.dismissed, this.paymentId});
 
   @override
-  String toString() => 'BushaPayCancelled()';
+  String toString() => 'BushaPayCancelled(reason: ${reason.name}, paymentId: $paymentId)';
 }
 
 /// An error occurred during checkout.

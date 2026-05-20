@@ -196,11 +196,12 @@ class BushaPay {
     _directLaunchCompleter = completer;
 
     final resumeObserver = _AppResumeObserver(() {
-      // Give the callback a moment to land first. If nothing arrives,
-      // treat the resume as "user came back without paying".
+      // Give the callback a moment to land first. If nothing arrives, the
+      // user came back without a callback — outcome is unverified, not a
+      // confirmed cancellation.
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (!completer.isCompleted) {
-          completer.complete(const BushaPayCancelled());
+          completer.complete(const BushaPayCancelled(reason: BushaPayCancelledReason.abandoned));
         }
       });
     });
@@ -242,7 +243,7 @@ class BushaPay {
       case 'completed':
         return BushaPaySuccess.fromCallback(paymentId: paymentRequestId);
       case 'cancelled':
-        return const BushaPayCancelled();
+        return BushaPayCancelled(reason: BushaPayCancelledReason.rejected, paymentId: paymentRequestId);
       default:
         final errorCode = uri.queryParameters['error_code'] ?? status ?? 'unknown';
         final errorMessage = uri.queryParameters['error_message'] ?? 'Payment failed';

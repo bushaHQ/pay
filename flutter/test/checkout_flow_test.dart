@@ -179,7 +179,7 @@ void main() {
   );
 
   testWidgets(
-    'Busha launch + cancelled callback resolves to BushaPayCancelled',
+    'Busha launch + cancelled callback resolves to a rejected BushaPayCancelled carrying the paymentId',
     (tester) async {
       urlLauncher.canLaunchAnswer = true;
       BushaPayResult? result;
@@ -189,12 +189,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final uri = Uri.parse('$_callbackScheme://callback?status=cancelled');
+      final uri = Uri.parse('$_callbackScheme://callback?status=cancelled&paymentRequestId=PAYR_REJ');
       expect(BushaPay.handleDeepLink(uri), isTrue);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(result, isA<BushaPayCancelled>());
+      expect(
+        result,
+        isA<BushaPayCancelled>()
+            .having((c) => c.reason, 'reason', equals(BushaPayCancelledReason.rejected))
+            .having((c) => c.paymentId, 'paymentId', equals('PAYR_REJ')),
+      );
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),
   );
@@ -224,7 +229,7 @@ void main() {
   );
 
   testWidgets(
-    'Busha launch + resume without callback within 1.5s resolves to BushaPayCancelled',
+    'Busha launch + resume without callback within 1.5s resolves to an abandoned BushaPayCancelled',
     (tester) async {
       urlLauncher.canLaunchAnswer = true;
       BushaPayResult? result;
@@ -237,7 +242,12 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump(const Duration(milliseconds: 1600));
 
-      expect(result, isA<BushaPayCancelled>());
+      expect(
+        result,
+        isA<BushaPayCancelled>()
+            .having((c) => c.reason, 'reason', equals(BushaPayCancelledReason.abandoned))
+            .having((c) => c.paymentId, 'paymentId', isNull),
+      );
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),
   );
