@@ -4,6 +4,13 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+/** Opens an [HttpURLConnection] for a URL — injectable so tests can stub it. */
+internal fun interface ConnectionOpener {
+    fun open(url: String): HttpURLConnection
+}
+
+private val defaultOpener = ConnectionOpener { URL(it).openConnection() as HttpURLConnection }
+
 /**
  * Resolves the merchant's display name for a given public key.
  *
@@ -13,9 +20,13 @@ import java.net.URL
  *
  * Blocking — call off the main thread.
  */
-internal fun fetchMerchantName(publicKey: String, platformUrl: String): String? {
+internal fun fetchMerchantName(
+    publicKey: String,
+    platformUrl: String,
+    opener: ConnectionOpener = defaultOpener,
+): String? {
     return try {
-        val conn = URL("$platformUrl/v1/merchants").openConnection() as HttpURLConnection
+        val conn = opener.open("$platformUrl/v1/merchants")
         try {
             conn.requestMethod = "GET"
             conn.setRequestProperty("X-BU-PUBLIC-KEY", publicKey)
