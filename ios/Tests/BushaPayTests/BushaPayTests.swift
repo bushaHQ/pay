@@ -44,10 +44,12 @@ final class BushaPayTests: XCTestCase {
     }
 
     func testParseCallbackCancelled() {
-        let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled")!
-        guard case .cancelled = BushaPay.parseCallback(url) else {
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled&paymentRequestId=PAYR_REJ")!
+        guard case .cancelled(let cancelled) = BushaPay.parseCallback(url) else {
             return XCTFail("expected cancelled")
         }
+        XCTAssertEqual(cancelled.reason, .rejected)
+        XCTAssertEqual(cancelled.paymentId, "PAYR_REJ")
     }
 
     func testParseCallbackErrorUsesErrorCodeAndMessage() {

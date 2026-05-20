@@ -22,7 +22,7 @@ func parseBridgeMessage(_ raw: String) -> BridgeMessage {
         guard let dict = payload as? [String: Any] else { return .unknown }
         return .result(.success(BushaPaySuccess.fromCommerceJs(dict)))
     case "close":
-        return .result(.cancelled)
+        return .result(.cancelled(BushaPayCancelled(reason: .dismissed)))
     case "error":
         let dict = (payload as? [String: Any]) ?? [:]
         let message = (dict["message"] as? String) ?? "An error occurred"

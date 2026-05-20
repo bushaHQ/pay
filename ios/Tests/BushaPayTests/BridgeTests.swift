@@ -20,7 +20,9 @@ final class BridgeTests: XCTestCase {
     }
 
     func testCloseMapsToCancelled() {
-        if case .result(.cancelled) = parseBridgeMessage(#"{"type":"close"}"#) {} else {
+        if case .result(.cancelled(let cancelled)) = parseBridgeMessage(#"{"type":"close"}"#) {
+            XCTAssertEqual(cancelled.reason, .dismissed)
+        } else {
             XCTFail("expected .cancelled")
         }
     }
