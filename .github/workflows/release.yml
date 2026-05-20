@@ -157,9 +157,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Placeholder
-        run: echo "Android SDK not yet implemented — skipping build."
-      # TODO: When implemented, bump version → build → commit → package zip → upload artifact.
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Sync shared assets
+        run: make sync-android
+
+      - name: Bump android/gradle.properties
+        run: |
+          sed -i "s/^VERSION=.*/VERSION=${{ needs.version.outputs.version }}/" android/gradle.properties
+          grep '^VERSION=' android/gradle.properties
+
+      # Verifies the library builds at the release version. The artifact
+      # itself is distributed via the JitPack mirror (see mirror-android).
+      - name: Build release AAR
+        working-directory: android
+        run: ./gradlew :pay-android:assembleRelease
 
   build-react-native:
     name: Build React Native
@@ -243,6 +272,12 @@ jobs:
           npm pkg set version=${{ needs.version.outputs.version }}
           grep '"version"' package.json | head -1
 
+      - name: Bump android/gradle.properties
+        if: inputs.sdk == 'android' || inputs.sdk == 'all'
+        run: |
+          sed -i "s/^VERSION=.*/VERSION=${{ needs.version.outputs.version }}/" android/gradle.properties
+          grep '^VERSION=' android/gradle.properties
+
       - name: Update SDK CHANGELOG(s)
         run: |
           set -euo pipefail
@@ -295,7 +330,8 @@ jobs:
             all)
               update_sdk_changelog flutter flutter
               update_sdk_changelog react-native react-native
-              # TODO: add android + ios once those SDKs ship.
+              update_sdk_changelog android android
+              # TODO: add ios once that SDK's CHANGELOG is wired in.
               ;;
           esac
 
@@ -304,7 +340,7 @@ jobs:
           set -euo pipefail
           for f in flutter/pubspec.yaml flutter/CHANGELOG.md \
                    react-native/package.json react-native/CHANGELOG.md \
-                   android/CHANGELOG.md ios/CHANGELOG.md; do
+                   android/gradle.properties android/CHANGELOG.md ios/CHANGELOG.md; do
             [ -f "$f" ] && git add -- "$f"
           done
           if git diff --cached --quiet; then
@@ -448,3 +484,51 @@ jobs:
           git tag "v${VERSION}"
           git push mirror "v${VERSION}"
           echo "Mirrored bushaHQ/pay-ios @ v${VERSION}"
+
+  mirror-android:
+    name: Mirror Android library to bushaHQ/pay-android
+    needs: [version, package]
+    if: |
+      always() &&
+      needs.package.result == 'success' &&
+      (inputs.sdk == 'android' || inputs.sdk == 'all')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Sync shared assets
+        run: make sync-android
+
+      # Pushes the android/ directory verbatim to the standalone mirror
+      # repo. JitPack builds the library from the pushed tag on demand —
+      # consumers resolve com.github.bushaHQ.pay-android:pay-android:<tag>.
+      - name: Push snapshot to bushaHQ/pay-android
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          set -euo pipefail
+          cd android
+          git init -q -b main
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -q -m "Android SDK ${VERSION}"
+          git remote add mirror "https://x-access-token:${TOKEN}@github.com/bushaHQ/pay-android.git"
+          if git ls-remote --tags mirror "refs/tags/${VERSION}" | grep -q .; then
+            echo "Tag ${VERSION} already exists on bushaHQ/pay-android — skipping."
+            exit 0
+          fi
+          git push --force mirror main
+          git tag "${VERSION}"
+          git push mirror "${VERSION}"
+          echo "Mirrored bushaHQ/pay-android @ ${VERSION}"

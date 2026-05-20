@@ -75,8 +75,8 @@ build-rn: sync-rn
 publish-flutter: build-flutter
 	cd flutter && flutter pub publish
 
-publish-android: build-android
-	cd android && ./gradlew :pay-android:publish
+publish-android:
+	@echo "Run the Release workflow (sdk=android) — it mirrors to bushaHQ/pay-android and JitPack builds from the tag"
 
 publish-ios:
 	@echo "Tag and push — SPM picks it up from the Git tag"
