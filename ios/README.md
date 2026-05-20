@@ -70,8 +70,8 @@ final class CheckoutButton: UIButton {
             switch result {
             case .success(let payment):
                 print("Paid: \(payment.paymentId)")
-            case .cancelled:
-                print("User cancelled")
+            case .cancelled(let cancelled):
+                print("Cancelled: \(cancelled.reason)")
             case .error(let err):
                 print("Error: \(err.message)")
             }
@@ -196,8 +196,18 @@ Replace `com.example.myapp` with your bundle identifier. If wired correctly, you
 | Case | Description |
 |---|---|
 | `.success(BushaPaySuccess)` | Payment completed. Contains `paymentId` and `status`, plus optional full payment data. |
-| `.cancelled` | User dismissed the checkout or backed out of the Busha app. |
+| `.cancelled(BushaPayCancelled)` | Checkout ended without a completed payment. Inspect `reason` (see below). |
 | `.error(BushaPayError)` | Something went wrong. Contains `message` and optional `code`. |
+
+### Cancellation reasons
+
+`BushaPayCancelled` carries a `reason` so you can tell *how* the checkout ended:
+
+| `BushaPayCancelledReason` | Meaning |
+|---|---|
+| `.dismissed` | The user closed the in-app chooser or web checkout sheet. |
+| `.rejected` | The Busha app reported the user explicitly rejected the payment. `paymentId` is populated so you can reconcile the request server-side. |
+| `.abandoned` | The user returned from the Busha app without a callback. The outcome is **unverified** — the payment may still have succeeded. Always reconcile server-side (webhook / status API) before showing the user a final state. |
 
 ### Full vs limited data
 

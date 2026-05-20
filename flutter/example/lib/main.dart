@@ -81,8 +81,8 @@ const _products = <Product>[
     id: 'p2',
     name: 'iPhone 15 Pro',
     description: '256GB, Titanium. The best iPhone yet.',
-    price: '15000',
-    currency: 'NGN',
+    price: '0.001',
+    currency: 'ETH',
     emoji: '📱',
   ),
   Product(
@@ -90,8 +90,8 @@ const _products = <Product>[
     name: 'AirPods Pro',
     description:
         'Active Noise Cancellation, Transparency mode, Adaptive Audio.',
-    price: '8500',
-    currency: 'NGN',
+    price: '10',
+    currency: 'USDT',
     emoji: '🎧',
   ),
 ];
@@ -141,7 +141,7 @@ class HomePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '₦${product.price}',
+                            '${product.price} ${product.currency}',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey.shade700,
@@ -221,7 +221,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              '₦${product.price}',
+              '${product.price} ${product.currency}',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -250,7 +250,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                     )
                   : Text(
-                      'Buy for ₦${product.price}',
+                      'Buy for ${product.price} ${product.currency}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -344,7 +344,7 @@ class ReceiptPage extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '₦${product.price}',
+                                '${product.price} ${product.currency}',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey.shade700,

@@ -80,4 +80,22 @@ final class BushaPayResultTests: XCTestCase {
         )
         XCTAssertTrue(success.hasFullData)
     }
+
+    func testBushaPayCancelledDefaultsToDismissedWithNoPaymentId() {
+        let cancelled = BushaPayCancelled()
+        XCTAssertEqual(cancelled.reason, .dismissed)
+        XCTAssertNil(cancelled.paymentId)
+    }
+
+    func testBushaPayCancelledCarriesRejectedReasonAndPaymentId() {
+        let cancelled = BushaPayCancelled(reason: .rejected, paymentId: "PAYR_42")
+        XCTAssertEqual(cancelled.reason, .rejected)
+        XCTAssertEqual(cancelled.paymentId, "PAYR_42")
+    }
+
+    func testBushaPayCancelledCarriesAbandonedReasonWithNoPaymentId() {
+        let cancelled = BushaPayCancelled(reason: .abandoned)
+        XCTAssertEqual(cancelled.reason, .abandoned)
+        XCTAssertNil(cancelled.paymentId)
+    }
 }

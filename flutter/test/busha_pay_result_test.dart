@@ -83,7 +83,34 @@ void main() {
 
   test('toString includes key fields', () {
     expect(BushaPaySuccess.fromCallback(paymentId: 'PAYR_X').toString(), contains('PAYR_X'));
-    expect(const BushaPayCancelled().toString(), 'BushaPayCancelled()');
+    expect(const BushaPayCancelled().toString(), contains('dismissed'));
     expect(const BushaPayError(message: 'm', code: 'c').toString(), contains('m'));
+  });
+
+  group('BushaPayCancelled', () {
+    test('defaults to the dismissed reason with no paymentId', () {
+      const cancelled = BushaPayCancelled();
+      expect(cancelled.reason, BushaPayCancelledReason.dismissed);
+      expect(cancelled.paymentId, isNull);
+    });
+
+    test('carries the rejected reason and paymentId', () {
+      const cancelled = BushaPayCancelled(reason: BushaPayCancelledReason.rejected, paymentId: 'PAYR_42');
+      expect(cancelled.reason, BushaPayCancelledReason.rejected);
+      expect(cancelled.paymentId, 'PAYR_42');
+    });
+
+    test('carries the abandoned reason with no paymentId', () {
+      const cancelled = BushaPayCancelled(reason: BushaPayCancelledReason.abandoned);
+      expect(cancelled.reason, BushaPayCancelledReason.abandoned);
+      expect(cancelled.paymentId, isNull);
+    });
+
+    test('toString surfaces the reason and paymentId', () {
+      expect(
+        const BushaPayCancelled(reason: BushaPayCancelledReason.rejected, paymentId: 'PAYR_9').toString(),
+        'BushaPayCancelled(reason: rejected, paymentId: PAYR_9)',
+      );
+    });
   });
 }

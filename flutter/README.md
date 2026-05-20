@@ -65,8 +65,8 @@ ElevatedButton(
         switch (result) {
           case BushaPaySuccess(:final paymentId):
             print('Payment $paymentId completed');
-          case BushaPayCancelled():
-            print('User cancelled');
+          case BushaPayCancelled(:final reason):
+            print('Cancelled: $reason');
           case BushaPayError(:final message):
             print('Error: $message');
         }
@@ -274,8 +274,18 @@ Keep `FlutterDeepLinkingEnabled = false` / `flutter_deeplinking_enabled = "false
 | Type | Description |
 |------|-------------|
 | `BushaPaySuccess` | Payment completed. Contains `paymentId` and `status`, plus optional full payment data. |
-| `BushaPayCancelled` | User dismissed the checkout or backed out. |
+| `BushaPayCancelled` | Checkout ended without a completed payment. Inspect `reason` (see below). |
 | `BushaPayError` | Something went wrong. Contains `message` and optional `code`. |
+
+### Cancellation Reasons
+
+`BushaPayCancelled` carries a `reason` so you can tell *how* the checkout ended:
+
+| `BushaPayCancelledReason` | Meaning |
+|---|---|
+| `dismissed` | The user closed the in-app chooser or web checkout sheet. |
+| `rejected` | The Busha app reported the user explicitly rejected the payment. `paymentId` is populated so you can reconcile the request server-side. |
+| `abandoned` | The user returned from the Busha app without a callback. The outcome is **unverified** — the payment may still have succeeded. Always reconcile server-side (webhook / status API) before showing the user a final state. |
 
 ### Full vs Limited Data
 

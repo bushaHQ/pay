@@ -236,7 +236,7 @@ describe('launchBushaApp', () => {
     expect(result).toMatchObject({ type: 'success', paymentId: 'P' });
   });
 
-  test('resolves with cancelled if the app comes back active without a callback', async () => {
+  test('resolves with an abandoned cancellation if the app comes back active without a callback', async () => {
     jest.useFakeTimers();
     const { launchBushaApp, BushaPay } = loadSdk();
     BushaPay.init({ publicKey: 'pub_x' });
@@ -245,7 +245,7 @@ describe('launchBushaApp', () => {
     mockAppStateListener!('active');
     jest.advanceTimersByTime(1500);
     const result = await promise;
-    expect(result).toEqual({ type: 'cancelled' });
+    expect(result).toEqual({ type: 'cancelled', reason: 'abandoned' });
   });
 
   test('resolves with an error result when openURL throws', async () => {

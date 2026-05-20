@@ -61,7 +61,9 @@ final class CheckoutSheetViewControllerTests: XCTestCase {
         var captured: BushaPayResult?
         let sheet = makeSheet { captured = $0 }
         sheet.processBridgePayload(#"{"type":"close"}"#)
-        guard case .cancelled = captured else { return XCTFail() }
+        guard case .cancelled(let cancelled) = captured else { return XCTFail() }
+        XCTAssertEqual(cancelled.reason, .dismissed)
+        XCTAssertNil(cancelled.paymentId)
     }
 
     func testBridgeErrorDeliversErrorWithMessageAndCode() {
@@ -194,7 +196,8 @@ final class CheckoutSheetViewControllerTests: XCTestCase {
         var captured: BushaPayResult?
         let sheet = makeSheet { captured = $0 }
         sheet.handleInteractiveDismiss()
-        guard case .cancelled = captured else { return XCTFail() }
+        guard case .cancelled(let cancelled) = captured else { return XCTFail() }
+        XCTAssertEqual(cancelled.reason, .dismissed)
         XCTAssertTrue(sheet.didDeliverResult)
     }
 
@@ -204,7 +207,8 @@ final class CheckoutSheetViewControllerTests: XCTestCase {
         sheet.presentationControllerDidDismiss(
             UIPresentationController(presentedViewController: sheet, presenting: nil)
         )
-        guard case .cancelled = captured else { return XCTFail() }
+        guard case .cancelled(let cancelled) = captured else { return XCTFail() }
+        XCTAssertEqual(cancelled.reason, .dismissed)
     }
 
     func testSwipeDismissAfterDeliveryIsIgnored() {

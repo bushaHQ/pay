@@ -325,6 +325,6 @@ final class CheckoutSheetViewController: UIViewController, WKNavigationDelegate,
         didDeliverResult = true
         bootstrapTimer?.invalidate()
         bootstrapTimer = nil
-        completion(.cancelled)
+        completion(.cancelled(BushaPayCancelled(reason: .dismissed)))
     }
 }

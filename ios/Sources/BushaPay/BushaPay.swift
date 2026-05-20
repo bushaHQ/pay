@@ -150,7 +150,9 @@ public enum BushaPay {
         case "completed":
             return .success(BushaPaySuccess.fromCallback(paymentId: paymentRequestId))
         case "cancelled":
-            return .cancelled
+            // The Busha app explicitly reported the user rejected the
+            // payment, handing back the request id for reconciliation.
+            return .cancelled(BushaPayCancelled(reason: .rejected, paymentId: paymentRequestId))
         default:
             let code = lookup["error_code"] ?? status ?? "unknown"
             let message = lookup["error_message"] ?? "Payment failed"
@@ -180,7 +182,7 @@ public enum BushaPay {
             },
             completion: { method in
                 guard let method else {
-                    completion(.cancelled)
+                    completion(.cancelled(BushaPayCancelled(reason: .dismissed)))
                     return
                 }
                 routeAfterChoice(method: method, config: config, from: presenter, completion: completion)
@@ -231,11 +233,14 @@ public enum BushaPay {
         _directLaunchHandler = { url in finish(parseCallback(url)) }
 
         // Resume without a matching callback inside the grace window
-        // means the user came back without paying.
+        // means the user came back without a callback — the outcome is
+        // unverified, not a confirmed cancellation.
         let delay = resumeCancelDelay
         observer = NotificationCenter.default.addObserver(forName: resumeNotification, object: nil, queue: .main) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                if !didFinish { finish(.cancelled) }
+                if !didFinish {
+                    finish(.cancelled(BushaPayCancelled(reason: .abandoned)))
+                }
             }
         }
 

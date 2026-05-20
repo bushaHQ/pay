@@ -37,9 +37,15 @@ describe('parseCallback', () => {
     if (r.type === 'success') expect(r.paymentId).toBe('');
   });
 
-  test('returns cancelled for status=cancelled', () => {
-    expect(parseCallback(`${SCHEME}://callback?status=cancelled`)).toEqual({
+  test('returns a rejected cancellation carrying paymentId for status=cancelled', () => {
+    expect(
+      parseCallback(
+        `${SCHEME}://callback?status=cancelled&paymentRequestId=PAYR_REJ`
+      )
+    ).toEqual({
       type: 'cancelled',
+      reason: 'rejected',
+      paymentId: 'PAYR_REJ',
     });
   });
 

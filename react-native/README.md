@@ -87,7 +87,7 @@ function PayButton() {
         console.log('Payment completed:', result.paymentId);
         break;
       case 'cancelled':
-        console.log('User cancelled');
+        console.log('Cancelled:', result.reason);
         break;
       case 'error':
         console.log('Error:', result.message);
@@ -329,8 +329,18 @@ const linking = {
 | `type` | Description |
 |---|---|
 | `'success'` | Payment completed. Contains `paymentId` and `status`, plus optional full data. |
-| `'cancelled'` | User dismissed the checkout or backed out. |
+| `'cancelled'` | Checkout ended without a completed payment. Inspect `reason` (see below). |
 | `'error'` | Something went wrong. Contains `message` and optional `code`. |
+
+### Cancellation Reasons
+
+A `'cancelled'` result carries a `reason` so you can tell *how* the checkout ended:
+
+| `reason` | Meaning |
+|---|---|
+| `'dismissed'` | The user closed the in-app chooser or web checkout sheet. |
+| `'rejected'` | The Busha app reported the user explicitly rejected the payment. `paymentId` is populated so you can reconcile the request server-side. |
+| `'abandoned'` | The user returned from the Busha app without a callback. The outcome is **unverified** — the payment may still have succeeded. Always reconcile server-side (webhook / status API) before showing the user a final state. |
 
 ```ts
 type BushaPayResult =
@@ -351,7 +361,11 @@ type BushaPayResult =
       timeline?: Record<string, unknown>;
       rawData?: Record<string, unknown>;
     }
-  | { type: 'cancelled' }
+  | {
+      type: 'cancelled';
+      reason: 'dismissed' | 'rejected' | 'abandoned';
+      paymentId?: string; // present only when reason === 'rejected'
+    }
   | { type: 'error'; message: string; code?: string };
 ```
 

@@ -152,7 +152,8 @@ final class BushaPayFlowTests: XCTestCase {
         chooser.handleBackdropTap()
 
         await fulfillment(of: [exp], timeout: 1)
-        guard case .cancelled = captured else { return XCTFail() }
+        guard case .cancelled(let cancelled) = captured else { return XCTFail() }
+        XCTAssertEqual(cancelled.reason, .dismissed)
         XCTAssertFalse(BushaPay.isCheckoutInProgress)
     }
 
@@ -227,7 +228,29 @@ final class BushaPayFlowTests: XCTestCase {
         XCTAssertEqual(s.paymentId, "PAYR_DEEP")
     }
 
-    func testLaunchBushaAppResumeWithoutCallbackResolvesCancelled() async {
+    func testLaunchBushaAppCancelledCallbackResolvesRejectedWithPaymentId() async {
+        // The user rejected the payment inside the Busha app — it fires a
+        // status=cancelled callback carrying the request id. This must be
+        // distinguishable from an `abandoned` resume-without-callback.
+        BushaPay.urlLauncher = { _, completion in completion(true) }
+
+        let exp = expectation(description: "completion fires")
+        var captured: BushaPayResult?
+        BushaPay.launchBushaApp(URL(string: "co.busha.apple://busha.co/pay")!) { result in
+            captured = result
+            exp.fulfill()
+        }
+
+        let url = URL(string: "co.example.testapp.busha-pay://callback?status=cancelled&paymentRequestId=PAYR_REJ")!
+        XCTAssertTrue(BushaPay.handleDeepLink(url))
+
+        await fulfillment(of: [exp], timeout: 1)
+        guard case .cancelled(let cancelled) = captured else { return XCTFail() }
+        XCTAssertEqual(cancelled.reason, .rejected)
+        XCTAssertEqual(cancelled.paymentId, "PAYR_REJ")
+    }
+
+    func testLaunchBushaAppResumeWithoutCallbackResolvesAbandoned() async {
         BushaPay.urlLauncher = { _, completion in completion(true) }
         BushaPay.resumeCancelDelay = 0.05
 
@@ -241,7 +264,9 @@ final class BushaPayFlowTests: XCTestCase {
         NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
 
         await fulfillment(of: [exp], timeout: 2)
-        guard case .cancelled = captured else { return XCTFail() }
+        guard case .cancelled(let cancelled) = captured else { return XCTFail() }
+        XCTAssertEqual(cancelled.reason, .abandoned)
+        XCTAssertNil(cancelled.paymentId)
     }
 
     func testLaunchBushaAppDeepLinkBeatsResumeRace() async {

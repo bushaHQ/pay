@@ -82,8 +82,22 @@ describe('successFromCheckoutData', () => {
 });
 
 describe('cancelled', () => {
-  test('builds a cancelled variant', () => {
-    expect(cancelled()).toEqual({ type: 'cancelled' });
+  test('defaults to the dismissed reason with no paymentId', () => {
+    expect(cancelled()).toEqual({ type: 'cancelled', reason: 'dismissed' });
+  });
+
+  test('carries the rejected reason and paymentId', () => {
+    expect(cancelled('rejected', 'PAYR_42')).toEqual({
+      type: 'cancelled',
+      reason: 'rejected',
+      paymentId: 'PAYR_42',
+    });
+  });
+
+  test('carries the abandoned reason with no paymentId', () => {
+    const c = cancelled('abandoned');
+    expect(c.reason).toBe('abandoned');
+    expect(c.paymentId).toBeUndefined();
   });
 });
 

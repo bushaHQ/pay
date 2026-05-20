@@ -20,7 +20,25 @@ export type BushaPaySuccess = {
   hasFullData: boolean;
 };
 
-export type BushaPayCancelled = { type: 'cancelled' };
+/**
+ * Why a checkout ended without a completed payment.
+ *
+ * - `'dismissed'`: the user dismissed the in-app chooser or web checkout
+ *   sheet (close button, backdrop tap, drag-to-dismiss).
+ * - `'rejected'`: the Busha app reported the user explicitly rejected the
+ *   payment. `BushaPayCancelled.paymentId` carries the payment request ID.
+ * - `'abandoned'`: the user returned from the Busha app without a callback
+ *   arriving. The outcome is **unverified** — it may still have succeeded.
+ *   Reconcile server-side before showing the user a final state.
+ */
+export type BushaPayCancelledReason = 'dismissed' | 'rejected' | 'abandoned';
+
+export type BushaPayCancelled = {
+  type: 'cancelled';
+  reason: BushaPayCancelledReason;
+  /** Present only when `reason` is `'rejected'`. */
+  paymentId?: string;
+};
 
 export type BushaPayError = {
   type: 'error';
@@ -68,7 +86,10 @@ export const successFromCheckoutData = (
   };
 };
 
-export const cancelled = (): BushaPayCancelled => ({ type: 'cancelled' });
+export const cancelled = (
+  reason: BushaPayCancelledReason = 'dismissed',
+  paymentId?: string
+): BushaPayCancelled => ({ type: 'cancelled', reason, paymentId });
 
 export const errorResult = (message: string, code?: string): BushaPayError => ({
   type: 'error',

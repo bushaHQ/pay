@@ -7,16 +7,52 @@ import Foundation
 /// switch result {
 /// case .success(let payment):
 ///     print("Paid: \(payment.paymentId)")
-/// case .cancelled:
-///     print("User cancelled")
+/// case .cancelled(let cancelled):
+///     print("Cancelled: \(cancelled.reason)")
 /// case .error(let err):
 ///     print("Error: \(err.message)")
 /// }
 /// ```
 public enum BushaPayResult: Sendable {
     case success(BushaPaySuccess)
-    case cancelled
+    case cancelled(BushaPayCancelled)
     case error(BushaPayError)
+}
+
+/// Why a checkout ended without a completed payment.
+public enum BushaPayCancelledReason: Sendable {
+    /// The user dismissed the in-app chooser or web checkout sheet —
+    /// close button, backdrop tap, or swipe-to-dismiss.
+    case dismissed
+
+    /// The Busha app reported that the user explicitly rejected the
+    /// payment. ``BushaPayCancelled/paymentId`` carries the request ID
+    /// so the merchant can reconcile server-side.
+    case rejected
+
+    /// The user returned from the Busha app without a callback arriving.
+    /// The payment outcome is **unverified** — it may still have
+    /// succeeded. Reconcile server-side before showing a final state.
+    case abandoned
+}
+
+/// The checkout ended without a completed payment.
+///
+/// Inspect ``reason`` to tell *how* it ended. In particular,
+/// ``BushaPayCancelledReason/abandoned`` does **not** mean the payment
+/// failed — only that the SDK never received a result.
+public struct BushaPayCancelled: Sendable {
+    /// How the checkout ended.
+    public let reason: BushaPayCancelledReason
+
+    /// The payment request ID. Present only when ``reason`` is
+    /// ``BushaPayCancelledReason/rejected``.
+    public let paymentId: String?
+
+    public init(reason: BushaPayCancelledReason = .dismissed, paymentId: String? = nil) {
+        self.reason = reason
+        self.paymentId = paymentId
+    }
 }
 
 /// Payment completed successfully.
