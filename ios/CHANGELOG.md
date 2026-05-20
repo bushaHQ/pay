@@ -1,3 +1,8 @@
+## 0.2.0 - 2026-05-20
+
+- docs: document cancellation reasons across all three SDKs (97562fb)
+- feat(ios): add cancellation reason to busha pay cancelled result (fa5cef4)
+
 ## 0.1.0 - 2026-05-07
 
 - Merge pull request #32 from bushaHQ/feat/ios-tests-coverage (d96b677)
