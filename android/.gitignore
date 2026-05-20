@@ -1,0 +1,15 @@
+# Gradle
+.gradle/
+build/
+
+# Android SDK location — machine-specific, never commit
+local.properties
+
+# IDE
+*.iml
+.idea/
+.kotlin/
+
+# Native build / captures
+captures/
+.cxx/
