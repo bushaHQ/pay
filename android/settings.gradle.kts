@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "busha-pay-android"
 include(":pay-android")
+include(":example")
