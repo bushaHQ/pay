@@ -1,3 +1,9 @@
+## 0.3.0 - 2026-05-20
+
+- docs: document cancellation reasons across all three SDKs (97562fb)
+- feat(flutter): add cancellation reason to busha pay cancelled result (6de689b)
+- fix(flutter): silence inappwebview plugin debug logs by default (c22e392)
+
 ## 0.2.1 - 2026-05-06
 
 - fix(sdk): point checkout URL at *.io (f1a2682)
