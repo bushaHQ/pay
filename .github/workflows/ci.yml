@@ -120,9 +120,80 @@ jobs:
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - run: echo "Android SDK not yet implemented — skipping."
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Sync shared assets
+        run: make sync-android
+
+      - name: Build, test and cover
+        working-directory: android
+        run: ./gradlew :pay-android:assembleRelease :pay-android:jacocoTestReport
+
+      - name: Extract coverage percentage
+        id: coverage
+        working-directory: android
+        run: |
+          REPORT=pay-android/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          # JaCoCo emits per-class, per-package, then a final report-level
+          # counter — the last LINE counter in the document is the total.
+          LINE=$(grep -oE '<counter type="LINE" missed="[0-9]+" covered="[0-9]+"/>' "$REPORT" | tail -1)
+          MISSED=$(echo "$LINE" | grep -oE 'missed="[0-9]+"' | grep -oE '[0-9]+')
+          COVERED=$(echo "$LINE" | grep -oE 'covered="[0-9]+"' | grep -oE '[0-9]+')
+          PCT=$(echo "scale=2; 100 * $COVERED / ($MISSED + $COVERED)" | bc)
+          echo "percentage=$PCT" >> "$GITHUB_OUTPUT"
+          echo "Android coverage: $PCT%"
+
+      - name: Enforce minimum coverage
+        run: |
+          PCT="${{ steps.coverage.outputs.percentage }}"
+          MIN=70
+          if (( $(echo "$PCT < $MIN" | bc -l) )); then
+            echo "Android coverage $PCT% is below minimum $MIN%"
+            exit 1
+          fi
+          echo "Android coverage $PCT% meets minimum $MIN%"
+
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        run: |
+          PCT="${{ steps.coverage.outputs.percentage }}"
+          if (( $(echo "$PCT >= 90" | bc -l) )); then
+            COLOR="brightgreen"
+          elif (( $(echo "$PCT >= 75" | bc -l) )); then
+            COLOR="green"
+          elif (( $(echo "$PCT >= 60" | bc -l) )); then
+            COLOR="yellow"
+          else
+            COLOR="red"
+          fi
+          printf '{"schemaVersion":1,"label":"android coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > android/coverage-badge.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/coverage-badge.json
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: update android coverage badge [skip ci]"
+            git stash --include-untracked || true
+            git pull --rebase
+            git stash pop || true
+            git push
+          fi
 
   ios:
     name: iOS

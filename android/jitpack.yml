@@ -1,0 +1,9 @@
+# JitPack build configuration for the bushaHQ/pay-android mirror.
+#
+# JitPack builds the library on demand the first time a consumer
+# resolves com.github.bushaHQ.pay-android:pay-android:<version>.
+jdk:
+  - openjdk17
+
+install:
+  - ./gradlew :pay-android:publishToMavenLocal -x test

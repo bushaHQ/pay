@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Android 11+ package visibility: lets the SDK detect whether the
+         Busha app is installed via resolveActivity(). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="co.busha.android" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="co.busha.android.development" />
+        </intent>
+    </queries>
+
+    <application>
+        <!-- Hosts the WebView checkout. Translucent so the merchant's
+             screen stays visible behind it, like a modal sheet. -->
+        <activity
+            android:name="co.busha.pay.internal.CheckoutActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
+            android:theme="@style/BushaPay.CheckoutTheme"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+
+</manifest>

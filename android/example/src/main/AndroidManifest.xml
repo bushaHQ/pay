@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".ExampleApp"
+        android:allowBackup="true"
+        android:label="Busha Store"
+        android:theme="@android:style/Theme.Material.Light">
+
+        <!-- launchMode=singleTask so the busha-pay callback deep link
+             reuses this Activity instead of spawning a new one. -->
+        <activity
+            android:name=".StoreActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Busha Pay callback: <applicationId>.busha-pay://callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${applicationId}.busha-pay" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

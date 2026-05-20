@@ -5,10 +5,11 @@ SHARED_ICONS_DIR = shared/icons
 #   sync-flutter — plain `cp` (no extra deps)
 #   sync-rn      — needs `node`
 #   sync-ios     — needs `rsvg-convert` (`brew install librsvg`)
-#   sync         — runs all three
-.PHONY: sync sync-flutter sync-rn sync-ios
+#   sync-android — needs `node` (svg2vectordrawable via npx)
+#   sync         — runs all four
+.PHONY: sync sync-flutter sync-rn sync-ios sync-android
 
-sync: sync-flutter sync-rn sync-ios
+sync: sync-flutter sync-rn sync-ios sync-android
 
 sync-flutter:
 	@mkdir -p flutter/assets && cp $(SHARED_HTML) flutter/assets/busha_pay_checkout.html
@@ -33,13 +34,22 @@ sync-ios:
 		printf '{\n  "images" : [\n    {\n      "filename" : "%s.pdf",\n      "idiom" : "universal"\n    }\n  ],\n  "info" : {\n    "author" : "xcode",\n    "version" : 1\n  },\n  "properties" : {\n    "preserves-vector-representation" : true,\n    "template-rendering-intent" : "%s"\n  }\n}\n' "$$base" "$$intent" > $$dest/Contents.json; \
 	done
 
+sync-android:
+	@command -v node >/dev/null || { echo "node not found — required for svg2vectordrawable"; exit 1; }
+	@mkdir -p android/pay-android/src/main/assets && cp $(SHARED_HTML) android/pay-android/src/main/assets/busha_pay_checkout.html
+	@mkdir -p android/pay-android/src/main/res/drawable
+	@for svg in $(SHARED_ICONS_DIR)/*.svg; do \
+		base=$$(basename $$svg .svg | tr '-' '_'); \
+		npx -y svg2vectordrawable -i $$svg -o android/pay-android/src/main/res/drawable/$$base.xml; \
+	done
+
 # Build each SDK
 .PHONY: build-flutter build-android build-ios build-rn
 
 build-flutter: sync-flutter
 	cd flutter && flutter pub get && flutter analyze
 
-build-android: sync
+build-android: sync-android
 	cd android && ./gradlew :pay-android:assembleRelease
 
 # `build-ios` is a compile-only smoke test, so a generic destination is
@@ -65,8 +75,8 @@ build-rn: sync-rn
 publish-flutter: build-flutter
 	cd flutter && flutter pub publish
 
-publish-android: build-android
-	cd android && ./gradlew :pay-android:publish
+publish-android:
+	@echo "Run the Release workflow (sdk=android) — it mirrors to bushaHQ/pay-android and JitPack builds from the tag"
 
 publish-ios:
 	@echo "Tag and push — SPM picks it up from the Git tag"
