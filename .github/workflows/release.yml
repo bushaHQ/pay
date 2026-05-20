@@ -117,7 +117,7 @@ jobs:
           cache: true
 
       - name: Sync shared assets
-        run: make sync
+        run: make sync-flutter
 
       - name: Bump flutter/pubspec.yaml
         run: |
@@ -187,7 +187,7 @@ jobs:
 
       - name: Sync shared assets
         working-directory: ${{ github.workspace }}
-        run: make sync
+        run: make sync-rn
 
       - name: Bump react-native/package.json
         run: |
