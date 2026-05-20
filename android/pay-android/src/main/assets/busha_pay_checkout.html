@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #fff; }
+  </style>
+</head>
+<body>
+  <form id="checkoutForm" method="POST" style="display:none;"></form>
+
+  <script>
+    function initCheckout(config) {
+      var form = document.getElementById('checkoutForm');
+      form.action = config._checkoutUrl;
+      delete config._checkoutUrl;
+      for (var key in config) {
+        if (config.hasOwnProperty(key)) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = config[key];
+          form.appendChild(input);
+        }
+      }
+      form.submit();
+    }
+  </script>
+</body>
+</html>
