@@ -1,8 +1,14 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    `maven-publish`
     jacoco
 }
+
+// Version is baked in by the release workflow (and the JitPack mirror)
+// via the VERSION property; defaults keep local/dev builds resolvable.
+group = "co.busha.pay"
+version = (findProperty("VERSION") as String?) ?: "0.0.1"
 
 android {
     namespace = "co.busha.pay"
@@ -36,6 +42,41 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+        }
+    }
+
+    // Publish the release AAR with a matching sources JAR. JitPack
+    // builds this variant on the bushaHQ/pay-android mirror.
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            register<MavenPublication>("release") {
+                from(components["release"])
+                groupId = project.group.toString()
+                artifactId = "pay-android"
+                version = project.version.toString()
+
+                pom {
+                    name.set("Busha Pay Android SDK")
+                    description.set(
+                        "Official Android SDK for accepting crypto payments via Busha.",
+                    )
+                    url.set("https://github.com/bushaHQ/pay")
+                    licenses {
+                        license {
+                            name.set("MIT")
+                            url.set("https://github.com/bushaHQ/pay/blob/main/LICENSE")
+                        }
+                    }
+                }
+            }
         }
     }
 }
