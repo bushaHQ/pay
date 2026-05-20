@@ -13,17 +13,28 @@ Official Android (Kotlin) SDK for accepting crypto payments via Busha.
 
 ## Installation
 
-Add the dependency to your module's `build.gradle.kts`:
+The SDK is distributed via [JitPack](https://jitpack.io). Add the JitPack
+repository — in `settings.gradle.kts`:
 
 ```kotlin
-dependencies {
-    implementation("co.busha:pay-android:0.0.1")
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
 }
 ```
 
-Make sure `google()` and `mavenCentral()` are in your repositories.
+Then add the dependency to your module's `build.gradle.kts`:
 
-> **Note:** the SDK is authored in the [bushaHQ/pay](https://github.com/bushaHQ/pay) monorepo under `android/`. Issues, PRs, and source live there.
+```kotlin
+dependencies {
+    implementation("com.github.bushaHQ.pay-android:pay-android:0.0.1")
+}
+```
+
+> **Note:** the SDK is authored in the [bushaHQ/pay](https://github.com/bushaHQ/pay) monorepo under `android/`, and each release is mirrored to the standalone [bushaHQ/pay-android](https://github.com/bushaHQ/pay-android) repo that JitPack builds from. Issues, PRs, and source live in the monorepo.
 
 The SDK ships with a single runtime dependency — `androidx.webkit` — which it uses to inject the checkout bridge reliably across WebView versions.
 
